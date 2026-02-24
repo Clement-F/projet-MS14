@@ -22,11 +22,11 @@ int main(int argc, char* argv[])
   printf("  Triangles  %10d \n", Msh->NbrTri);
   printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
-  //--- create neigbhors Q2 version
-  to = clock();
-  msh_neighborsQ2(Msh);
-  ti = clock();
-  printf("  time q2 neigh.        %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+  // //--- create neigbhors Q2 version
+  // to = clock();
+  // msh_neighborsQ2(Msh);
+  // ti = clock();
+  // printf("  time q2 neigh.        %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   //--- create neigbhors with hash table
   to = clock();
@@ -37,11 +37,25 @@ int main(int argc, char* argv[])
   //--- TODO: compute mesh quality
   double* Qal = (double*)malloc(sizeof(double) * (Msh->NbrTri + 1));
 
+  double alpha = sqrt(3)/12;
+
   for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
-    Qal[iTri] = (double)iTri / 10.;
+  int i1,i2,i3; double a,b,c;
+  i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
+  double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
+  double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
+  double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
+
+  a = (P1[0]-P2[0])*(P1[0]-P2[0]) + (P1[1]-P2[1])*(P1[1]-P2[1]); 
+  b = (P2[0]-P3[0])*(P2[0]-P3[0]) + (P2[1]-P3[1])*(P2[1]-P3[1]); 
+  c = (P3[0]-P1[0])*(P3[0]-P1[0]) + (P3[1]-P1[1])*(P3[1]-P1[1]); 
+  double K_surf = 0.5*((P2[0]-P1[0])*(P3[1]-P1[1]) - (P1[1]-P2[1])*(P3[0]-P1[0]));
+    Qal[iTri] = (a+b+c)/K_surf;
   }
 
   msh_write2dfield_Triangles("quality.solb", Msh->NbrTri, Qal);
+
+  printf("quality met \n");
 
   //--- TODO: compute metric field
   double3d* Met = (double3d*)malloc(sizeof(double3d) * (Msh->NbrVer + 1));

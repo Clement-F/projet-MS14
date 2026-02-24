@@ -276,14 +276,17 @@ int msh_write(Mesh* Msh, char* file)
 int msh_neighborsQ2(Mesh* Msh)
 {
   int iTri, iEdg, jTri, jEdg, iVer1, iVer2, jVer1, jVer2;
+  double to, ti;
 
   if (!Msh) return 0;
 
   if (Msh->TriVoi == NULL)
     Msh->TriVoi = calloc((Msh->NbrTri + 1), sizeof(int3d));
 
+  to = clock();  
   //--- Compute the neighbors using a quadratic-complexity algorithm
   for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
+    if(iTri%5000 == 0){ ti = clock();   printf("--- task %d / %d full --- %lg (s) passed \n",iTri,Msh->NbrTri,(ti-to)/ CLOCKS_PER_SEC );}
     for (iEdg = 0; iEdg < 3; iEdg++) {
       iVer1 = Msh->Tri[iTri][tri2edg[iEdg][0]];
       iVer2 = Msh->Tri[iTri][tri2edg[iEdg][1]];
@@ -323,7 +326,7 @@ int msh_neighbors(Mesh* Msh)
   //--- initialize HashTable and set the hash table
   printf(" init hash\n");
   int SizHead = 2*(Msh->NbrVerMax);
-  int NbrMaxObj = Msh->NbrVer + Msh->NbrTri -2 ;
+  int NbrMaxObj = Msh->NbrVer + Msh->NbrTri ; // Euler caracteristique with a bit of security
 
 
   HashTable* hsh = hash_init(SizHead, NbrMaxObj); 
@@ -331,7 +334,7 @@ int msh_neighbors(Mesh* Msh)
   //--- Compute the neighbors using the hash table
   for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
     for (iEdg = 0; iEdg < 3; iEdg++) {
-      printf("======== %d ; %d ======== \n",iTri,iEdg);
+      // printf("======== %d ; %d ======== \n",iTri,iEdg);
       iVer1 = Msh->Tri[iTri][tri2edg[iEdg][0]];
       iVer2 = Msh->Tri[iTri][tri2edg[iEdg][1]];
 
@@ -340,11 +343,11 @@ int msh_neighbors(Mesh* Msh)
       int key = iVer1 + iVer2;
       //  do we have objects as that key hash_find () */
       int j_hsh = hash_find(hsh,iVer1,iVer2);
-      printf("j_hsh = %d \n", j_hsh);
+      // printf("j_hsh = %d \n", j_hsh);
       //  if yes ===> look among objects and potentially update TriVoi */
       if(j_hsh !=0)
       {
-        printf("found at object j=%d \n",j_hsh);
+        // printf("found at object j=%d \n",j_hsh);
         hash_add(hsh,iVer1,iVer2,iTri,j_hsh);
         jTri = hsh->LstObj[j_hsh][2];
         Msh->TriVoi[iTri][iEdg] = jTri;
@@ -359,14 +362,14 @@ int msh_neighbors(Mesh* Msh)
       //  if no  ===> add to hash table   hash_add()   */
       if(j_hsh ==0)
       {
-        printf("adding new object \n");
+        // printf("adding new object \n");
         hash_add(hsh,iVer1,iVer2,iTri,0);
       }
 
     }
   }
 
-  hash_out(hsh);
+  // hash_out(hsh);
 
   return 1;
 }
@@ -383,12 +386,13 @@ HashTable* hash_init(int SizHead, int NbrMaxObj)
   
   printf("alloc hash table \n");
 
-  hsh->LstObj = calloc(hsh->NbrMaxObj+1,sizeof(int5d));
-  hsh->Head   = calloc(hsh->SizHead  +1,1);
+  hsh->LstObj = calloc((hsh->NbrMaxObj+1),sizeof(int5d));
+  hsh->Head   = calloc((hsh->SizHead  +1),sizeof(int));
 
   printf("size of head :%10d \n", SizHead);
   printf("size of obj  :%10d \n", NbrMaxObj);
-  for(int j=1;j<SizHead+1;j++){hsh->Head[j]=0;}
+  for(int j=1;j<hsh->SizHead;j++){hsh->Head[j]=0;}
+  printf("init finalized \n");
 
   return hsh;
 }
@@ -400,13 +404,13 @@ int hash_find(HashTable* hsh, int iVer1, int iVer2)
   int n = 0; // security
   while(j_hsh!=0 && n<hsh->NbrMaxObj)
   {
-    printf("searching element %d if it has Vert (%d,%d) \n",j_hsh,iVer1,iVer2);
-    if(hsh->LstObj[j_hsh][0]==iVer1 && hsh->LstObj[j_hsh][1]==iVer2){printf("add 1\n "); j_hsh;}
-    else{ if(hsh->LstObj[j_hsh][1]==iVer1 && hsh->LstObj[j_hsh][0]==iVer2){printf("add 2\n");return j_hsh;}
-          else {printf("next element \n"); j_hsh = hsh->LstObj[j_hsh][4];}
+    // printf("searching element %d if it has Vert (%d,%d) \n",j_hsh,iVer1,iVer2);
+    if(hsh->LstObj[j_hsh][0]==iVer1 && hsh->LstObj[j_hsh][1]==iVer2){return j_hsh;}
+    else{ if(hsh->LstObj[j_hsh][1]==iVer1 && hsh->LstObj[j_hsh][0]==iVer2){return j_hsh;}
+          else {j_hsh = hsh->LstObj[j_hsh][4];}
     }
   }
-  printf("j_hsh = 0 \n");
+  // printf("j_hsh = 0 \n");
   return 0;
 
 }
@@ -424,7 +428,7 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
     hsh->LstObj[hsh->NbrObj +1][4] = hsh->Head[iVer1+iVer2];  
     hsh->NbrObj +=1;
     hsh->Head[iVer1+iVer2] = hsh->NbrObj;   
-    printf("adding element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", hsh->NbrObj, iVer1,iVer2, iTri, hsh->LstObj[hsh->NbrObj][3], hsh->LstObj[hsh->NbrObj][4]);
+    // printf("adding element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", hsh->NbrObj, iVer1,iVer2, iTri, hsh->LstObj[hsh->NbrObj][3], hsh->LstObj[hsh->NbrObj][4]);
     if(hsh->NbrObj> hsh->NbrMaxObj) printf("  ## WARNING: HSH ELEMENT ALREADY FULL. IGNORED\n");
   }
 
@@ -432,7 +436,7 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
   { 
     if(hsh->LstObj[i_hsh][3] ==0){hsh->LstObj[i_hsh][3] = iTri;} 
     else printf("  ## WARNING: HSH ELEMENT ALREADY COMPLETE. IGNORED\n");
-    printf("updating element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", i_hsh, iVer1,iVer2, hsh->LstObj[hsh->NbrObj][3], iTri, hsh->LstObj[hsh->NbrObj][4]);
+    // printf("updating element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", i_hsh, iVer1,iVer2, hsh->LstObj[hsh->NbrObj][3], iTri, hsh->LstObj[hsh->NbrObj][4]);
   }
 
   return 0;
@@ -532,35 +536,3 @@ int msh_write2dmetric(char* file, int nmetric, double3d* metric)
 
   return 1;
 }
-
-// double Q1_el(Mesh* Msh, int3d* Tri)
-// {
-//   double alpha = sqrt(3)/12;
-//   double2d P1;
-//   double2d P2;
-//   double2d P3; 
-//   int i1,i2,i3; double a,b,c;
-//   i1 = Tri[0];        i2 = Tri[1];        i3 = Tri[2];
-//   P1 = Msh->Crd[i1];  P2 = Msh->Crd[i2];  P3 = Msh->Crd[i3];
-//   a = (P1[0]-P2[0])*(P1[0]-P2[0]) + (P1[1]-P2[1])*(P1[1]-P2[1]); 
-//   b = (P2[0]-P3[0])*(P2[0]-P3[0]) + (P2[1]-P3[1])*(P2[1]-P3[1]); 
-//   c = (P3[0]-P1[0])*(P3[0]-P1[0]) + (P3[1]-P1[1])*(P3[1]-P1[1]); 
-//   double K_surf = 0.5*((P2[0]-P1[0])*(P3[1]-P1[1]) - (P1[1]-P2[1])*(P3[0]-P1[0]));
-//   return (a+b+c)/K_surf;
-// }
-
-// double Q2_el(Mesh* Msh, int3d* Tri)
-// {
-//   double alpha = sqrt(3)/12;
-//   double2d P1;
-//   double2d P2;
-//   double2d P3; 
-//   int i1,i2,i3; double a,b,c;
-//   i1 = Tri[0]; i2= Tri[1]; i3 = Tri[2];
-//   P1 = Msh->Crd[i1];  P2 = Msh->Crd[i2];  P3 = Msh->Crd[i3];
-//   a = sqrt((P1[0]-P2[0])*(P1[0]-P2[0]) + (P1[1]-P2[1])*(P1[1]-P2[1])); 
-//   b = sqrt((P2[0]-P3[0])*(P2[0]-P3[0]) + (P2[1]-P3[1])*(P2[1]-P3[1])); 
-//   c = sqrt((P3[0]-P1[0])*(P3[0]-P1[0]) + (P3[1]-P1[1])*(P3[1]-P1[1])); 
-//   double h = max(a,b,c); 
-//   double r = a*b*c/sqrt((a+b+c)*(-a+b+c)*(a-b+c)*(a+b-c));
-// }
