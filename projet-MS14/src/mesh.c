@@ -313,7 +313,7 @@ int msh_neighborsQ2(Mesh* Msh)
 int msh_neighbors(Mesh* Msh)
 {
   printf(" init neighbors\n");
-  int iTri, iEdg, iVer1, iVer2;
+  int iTri, iEdg, iVer1, iVer2, jVer1, jVer2, jTri, jEdg;
 
   if (!Msh) return 0;
 
@@ -331,53 +331,39 @@ int msh_neighbors(Mesh* Msh)
   //--- Compute the neighbors using the hash table
   for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
     for (iEdg = 0; iEdg < 3; iEdg++) {
+      printf("======== %d ; %d ======== \n",iTri,iEdg);
       iVer1 = Msh->Tri[iTri][tri2edg[iEdg][0]];
       iVer2 = Msh->Tri[iTri][tri2edg[iEdg][1]];
 
-      // TODO:
-      // compute the key : iVer1+iVer2
+      //  TODO:
+      //  compute the key : iVer1+iVer2
       int key = iVer1 + iVer2;
-      // do we have objects as that key hash_find () */
-      int j = hsh->Head[key];
+      //  do we have objects as that key hash_find () */
+      int j_hsh = hash_find(hsh,iVer1,iVer2);
+      printf("j_hsh = %d \n", j_hsh);
       //  if yes ===> look among objects and potentially update TriVoi */
-      int i_buf,n;
-      
-      n=0;
-      while(j !=0 && n<10)  // look through the chain
+      if(j_hsh !=0)
       {
-        i_buf=j;
-        // if the object is the one we want
-        if((hsh->LstObj[j][0]==iVer1 && hsh->LstObj[j][1]==iVer2) || (hsh->LstObj[j][1]==iVer1 && hsh->LstObj[j][0]==iVer2))
+        printf("found at object j=%d \n",j_hsh);
+        hash_add(hsh,iVer1,iVer2,iTri,j_hsh);
+        jTri = hsh->LstObj[j_hsh][2];
+        Msh->TriVoi[iTri][iEdg] = jTri;
+        for(jEdg=0;jEdg<3;jEdg++)
         {
-          printf(" ------------ (%d,%d) --------- \n", iVer1, iVer2);
-          printf("Checking the Neighbor place j= %d \n",j);
-          // and the triangle is the one we are on
-          if(hsh->LstObj[j][2]==iTri){ Msh->TriVoi[iTri][iEdg] = hsh->LstObj[j][3]; j=0;}     // we add it to the neighbor list
-          // else if(hsh->LstObj[j][3]==iTri){ Msh->TriVoi[iTri][iEdg] = hsh->LstObj[j][2]; j=0;}// we add it to the neighbor list
-          else printf("  ## WARNING: HSH TABLE WRONG. IGNORED\n");
+          jVer1 = Msh->Tri[jTri][tri2edg[jEdg][0]];
+          jVer2 = Msh->Tri[jTri][tri2edg[jEdg][1]];
+           if((jVer1 == iVer1 && jVer2 == iVer2) || (jVer1 == iVer2 && jVer2 == iVer1))
+           {Msh->TriVoi[jTri][jEdg] = iTri;}
         }
-        // if it isn't the one we want
-        else
-        {
-          printf("elsevier \n");
-          j = hsh->LstObj[j][4]; // we look for the next element in the list, and start again
-        }
-        
-        n+=1;
+      }
+      //  if no  ===> add to hash table   hash_add()   */
+      if(j_hsh ==0)
+      {
+        printf("adding new object \n");
+        hash_add(hsh,iVer1,iVer2,iTri,0);
       }
 
-      printf(" ============= %d ; %d =============== \n", iTri, iEdg);
-
-      //  if no  ===> add to hash table   hash_add()   */
-
-      hash_add(hsh,iVer1,iVer2,iTri);
-      hsh->LstObj[hsh->NbrObj][4] = hsh->Head[key];   //  add the element as the beginning of the key
-      printf("changed the element at position %d to %d \n",hsh->NbrObj, hsh->Head[key]);
-      hsh->Head[key]= hsh->NbrObj;                    //  
-      printf("changed the Head at position %d to %d \n",key, hsh->Head[key]);
-      printf("---------------- \n"); 
     }
-  printf("================== \n");
   }
 
   hash_out(hsh);
@@ -409,20 +395,25 @@ HashTable* hash_init(int SizHead, int NbrMaxObj)
 
 int hash_find(HashTable* hsh, int iVer1, int iVer2)
 {
-
-  int j_hsh;
-  for(j_hsh=1; j_hsh <hsh->NbrMaxObj; j_hsh++){
-    if(hsh->LstObj[j_hsh][0]==iVer1 && hsh->LstObj[j_hsh][1]==iVer2){return j_hsh;}
-    if(hsh->LstObj[j_hsh][1]==iVer1 && hsh->LstObj[j_hsh][0]==iVer2){return j_hsh;}
+  int key = iVer1 + iVer2;
+  int j_hsh = hsh->Head[key];
+  int n = 0; // security
+  while(j_hsh!=0 && n<hsh->NbrMaxObj)
+  {
+    printf("searching element %d if it has Vert (%d,%d) \n",j_hsh,iVer1,iVer2);
+    if(hsh->LstObj[j_hsh][0]==iVer1 && hsh->LstObj[j_hsh][1]==iVer2){printf("add 1\n "); j_hsh;}
+    else{ if(hsh->LstObj[j_hsh][1]==iVer1 && hsh->LstObj[j_hsh][0]==iVer2){printf("add 2\n");return j_hsh;}
+          else {printf("next element \n"); j_hsh = hsh->LstObj[j_hsh][4];}
+    }
   }
+  printf("j_hsh = 0 \n");
   return 0;
 
 }
 
-int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri)
+int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
 {
-  int i_hsh;
-  i_hsh = hash_find(hsh,iVer1,iVer2); // check if the element isn't in the hash_list already
+  if(i_hsh==0)  i_hsh = hash_find(hsh,iVer1,iVer2); // check if the element isn't in the hash_list already
 
   if(i_hsh==0)
   {
@@ -430,14 +421,18 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri)
     hsh->LstObj[hsh->NbrObj +1][1] = iVer2;
     hsh->LstObj[hsh->NbrObj +1][2] = iTri; 
     hsh->LstObj[hsh->NbrObj +1][3] = 0;
-    hsh->LstObj[hsh->NbrObj +1][4] = 0;     
+    hsh->LstObj[hsh->NbrObj +1][4] = hsh->Head[iVer1+iVer2];  
     hsh->NbrObj +=1;
+    hsh->Head[iVer1+iVer2] = hsh->NbrObj;   
+    printf("adding element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", hsh->NbrObj, iVer1,iVer2, iTri, hsh->LstObj[hsh->NbrObj][3], hsh->LstObj[hsh->NbrObj][4]);
     if(hsh->NbrObj> hsh->NbrMaxObj) printf("  ## WARNING: HSH ELEMENT ALREADY FULL. IGNORED\n");
   }
+
   if(i_hsh !=0)
   { 
     if(hsh->LstObj[i_hsh][3] ==0){hsh->LstObj[i_hsh][3] = iTri;} 
     else printf("  ## WARNING: HSH ELEMENT ALREADY COMPLETE. IGNORED\n");
+    printf("updating element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", i_hsh, iVer1,iVer2, hsh->LstObj[hsh->NbrObj][3], iTri, hsh->LstObj[hsh->NbrObj][4]);
   }
 
   return 0;

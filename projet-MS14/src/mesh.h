@@ -99,7 +99,7 @@ typedef struct hash_table {
 HashTable* hash_init(int SizHead, int NbrMaxObj); // alloc and set htable ==> allocate Head, LstObj
 
 int hash_find(HashTable* hsh, int iVer1, int iVer2); // return the id found (in LstObj ), if 0 the object is not in the list
-int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri); // ==> add this entry in the hash tab
+int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh); // ==> add this entry in the hash tab
 int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri); // ==> suppress this entry in the hash tab
 
 //--- Fonction used for adaptation
