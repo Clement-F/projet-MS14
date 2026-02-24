@@ -54,12 +54,13 @@ int main(int argc, char* argv[])
   a = (P1[0]-P2[0])*(P1[0]-P2[0]) + (P1[1]-P2[1])*(P1[1]-P2[1]); 
   b = (P2[0]-P3[0])*(P2[0]-P3[0]) + (P2[1]-P3[1])*(P2[1]-P3[1]); 
   c = (P3[0]-P1[0])*(P3[0]-P1[0]) + (P3[1]-P1[1])*(P3[1]-P1[1]); 
-  double K_surf = 0.5*((P2[0]-P1[0])*(P3[1]-P1[1]) - (P1[1]-P2[1])*(P3[0]-P1[0]));
+  double K_surf = fabs(0.5*((P2[0]-P1[0])*(P3[1]-P1[1]) - (P2[1]-P1[1])*(P3[0]-P1[0])));
+  printf("donnee : a= %lg, b= %lg, c= %lg et K= %lg \n", a,b,c,K_surf);
 
-  Qal[iTri] = (a+b+c)/K_surf; printf("%d quality evaluated at : %f \n", iTri, Qal[iTri]);
+  Qal[iTri] = (a+b+c)/K_surf; printf("%d quality evaluated at : %lg \n", iTri, Qal[iTri]);
   }
 
-  msh_write2dfield_Triangles("quality.solb", Msh->NbrTri, Qal);
+  msh_write2dfield_Triangles("quality.sol", Msh->NbrTri, Qal);
 
   printf("quality met \n");
 
