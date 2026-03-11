@@ -228,9 +228,10 @@ double* sol_read(char* file, int mshDim, int mshNbrSol)
 int msh_boundingbox(Mesh* Msh)
 {
   int1d iVer;
-  double x_min,x_max, y_min, y_max;
+  double x_min =Msh->Crd[1][0], x_max =Msh->Crd[1][0];
+  double y_min =Msh->Crd[1][1], y_max =Msh->Crd[1][1];
   //--- compute bounding box
-  for (iVer = 1; iVer <= Msh->NbrVer; iVer++) {
+  for (iVer = 2; iVer <= Msh->NbrVer; iVer++) {
     if(Msh->Crd[iVer][0]>x_max) x_max = Msh->Crd[iVer][0];
     if(Msh->Crd[iVer][0]<x_min) x_min = Msh->Crd[iVer][0];
     if(Msh->Crd[iVer][1]>y_max) y_max = Msh->Crd[iVer][1];
@@ -288,19 +289,21 @@ int msh_neighborsQ2(Mesh* Msh)
   for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
     if(iTri%5000 == 0){ ti = clock();   printf("--- task %d / %d full --- %lg (s) passed \n",iTri,Msh->NbrTri,(ti-to)/ CLOCKS_PER_SEC );}
     for (iEdg = 0; iEdg < 3; iEdg++) {
+      if(Msh->TriVoi[iTri][iEdg] !=0){ continue;}
       iVer1 = Msh->Tri[iTri][tri2edg[iEdg][0]];
       iVer2 = Msh->Tri[iTri][tri2edg[iEdg][1]];
 
       //--- find the Tri different from iTri that has iVer1, iVer2 as vertices
       for (jTri = 1; jTri <= Msh->NbrTri; jTri++) {
-        if (iTri == jTri)
-          continue;
+        if(iTri == jTri){continue;}
 
         for (jEdg = 0; jEdg < 3; jEdg++) {
           jVer1 = Msh->Tri[jTri][tri2edg[jEdg][0]];
           jVer2 = Msh->Tri[jTri][tri2edg[jEdg][1]];
 
-          if((iVer1== jVer1 && iVer2 ==jVer2 )|| (iVer1 == jVer2 && iVer1 == jVer1)){
+
+          if(((iVer1== jVer1) && (iVer2 ==jVer2)) || ((iVer1 == jVer2) && (iVer2 == jVer1)))
+          {
             Msh->TriVoi[jTri][jEdg]=iTri;
             Msh->TriVoi[iTri][iEdg]=jTri;
           }
@@ -309,6 +312,10 @@ int msh_neighborsQ2(Mesh* Msh)
       }
     }
   }
+  
+  // for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
+  // printf("Trivoi of %d : %d, %d, %d \n", iTri, Msh->TriVoi[iTri][0], Msh->TriVoi[iTri][1], Msh->TriVoi[iTri][2]);
+  // }
 
   return 1;
 }
@@ -330,24 +337,14 @@ int msh_neighbors(Mesh* Msh)
 
 
   HashTable* hsh = hash_init(SizHead, NbrMaxObj); 
-
-  //--- Compute the neighbors using the hash table
   for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
     for (iEdg = 0; iEdg < 3; iEdg++) {
-      // printf("======== %d ; %d ======== \n",iTri,iEdg);
       iVer1 = Msh->Tri[iTri][tri2edg[iEdg][0]];
       iVer2 = Msh->Tri[iTri][tri2edg[iEdg][1]];
 
-      //  TODO:
-      //  compute the key : iVer1+iVer2
-      int key = iVer1 + iVer2;
-      //  do we have objects as that key hash_find () */
       int j_hsh = hash_find(hsh,iVer1,iVer2);
-      // printf("j_hsh = %d \n", j_hsh);
-      //  if yes ===> look among objects and potentially update TriVoi */
       if(j_hsh !=0)
       {
-        // printf("found at object j=%d \n",j_hsh);
         hash_add(hsh,iVer1,iVer2,iTri,j_hsh);
         jTri = hsh->LstObj[j_hsh][2];
         Msh->TriVoi[iTri][iEdg] = jTri;
@@ -359,10 +356,8 @@ int msh_neighbors(Mesh* Msh)
            {Msh->TriVoi[jTri][jEdg] = iTri;}
         }
       }
-      //  if no  ===> add to hash table   hash_add()   */
       if(j_hsh ==0)
       {
-        // printf("adding new object \n");
         hash_add(hsh,iVer1,iVer2,iTri,0);
       }
 
@@ -370,6 +365,8 @@ int msh_neighbors(Mesh* Msh)
   }
 
   // hash_out(hsh);
+  hash_bound(hsh);
+  hash_collision(hsh);
 
   return 1;
 }
@@ -417,6 +414,9 @@ int hash_find(HashTable* hsh, int iVer1, int iVer2)
 
 int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
 {
+
+  // i_hsh is a initial guess. it should be 0 by default, 
+  // but if you have already run hash_find, you can bypass the find to imput the element at i_hsh
   if(i_hsh==0)  i_hsh = hash_find(hsh,iVer1,iVer2); // check if the element isn't in the hash_list already
 
   if(i_hsh==0)
@@ -442,12 +442,14 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
   return 0;
 }
 
-int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)
+int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an element of the hash table
 {
 
   int i_hsh;
   i_hsh = hash_find(hsh,iVer1,iVer2); // check if the element is in the hash_list
-
+  // ================
+  // REDO !!!!!!
+  // ================
   if(i_hsh ==0) return 0;
   if(hsh->LstObj[hsh->NbrObj +1][2] ==iTri) hsh->LstObj[hsh->NbrObj +1][2] =0;
   else if(hsh->LstObj[hsh->NbrObj +1][3] ==iTri) hsh->LstObj[hsh->NbrObj +1][3] =0;
@@ -456,7 +458,7 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)
   return 0;
 }
 
-int hash_out(HashTable* hsh)
+int hash_out(HashTable* hsh)  // print the hash table
 {
   for(int j=0;j<hsh->NbrMaxObj;j++){
     printf("indices = %d \n", j);
@@ -465,6 +467,51 @@ int hash_out(HashTable* hsh)
     printf("next : %d\n", hsh->LstObj[j][4]);
     printf("----------- \n");
   }
+  return 0;
+}
+
+int hash_bound(HashTable* hsh)
+{
+  int Nb_bound =0;
+
+  for(int i_hsh=1; i_hsh <= hsh->NbrObj; i_hsh++ )
+  {  
+    // printf("Triangles : %d, %d ", hsh->LstObj[i_hsh][2], hsh->LstObj[i_hsh][3]);
+    if(hsh->LstObj[i_hsh][3] == 0)
+    {      
+      // printf(" : edge ");
+      Nb_bound +=1;
+    }
+    // printf(" \n ======= \n");
+  }
+  printf("Number of boundary edges : %d \n", Nb_bound);
+  return 0;
+}
+
+int hash_collision(HashTable* hsh)
+{
+  int Max_col = 0,  col=0, length=0;
+  double Mean_col = 0;
+  int i_hsh;
+  for(int i_key = 1; i_key<=hsh->SizHead; i_key++)
+  {
+    length =0;
+    i_hsh = hsh->Head[i_key];
+    if(i_hsh!=0){col+=1;}
+
+    while(i_hsh!=0)
+    {
+      length+=1;
+      i_hsh = hsh->LstObj[i_hsh][4];
+    }
+
+    Mean_col += length;
+    if(length>Max_col) Max_col = length;
+
+  }
+  printf("number of collision : %d \n", col);
+  printf("Maximum collision : %d \n", Max_col);
+  printf("Mean collision : %lg \n",  Mean_col/col );
   return 0;
 }
 

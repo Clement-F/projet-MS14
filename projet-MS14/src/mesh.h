@@ -74,7 +74,6 @@ Mesh*   msh_init();
 Mesh*   msh_read(char* file, int readEfr);
 int     msh_write(Mesh* Msh, char* file);
 double* sol_read(char* file, int mshDim, int mshNbrSol);
-int hash_out();
 
 //--- Functions to be implemented
 int msh_boundingbox(Mesh* Msh); // compute the bouding box of the mesh
@@ -96,11 +95,14 @@ typedef struct hash_table {
 } HashTable;
 
 //--- Implementing the following function should be necessary
-HashTable* hash_init(int SizHead, int NbrMaxObj); // alloc and set htable ==> allocate Head, LstObj
+HashTable* hash_init(int SizHead, int NbrMaxObj);                           // alloc and set htable ==> allocate Head, LstObj
 
-int hash_find(HashTable* hsh, int iVer1, int iVer2); // return the id found (in LstObj ), if 0 the object is not in the list
-int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh); // ==> add this entry in the hash tab
-int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri); // ==> suppress this entry in the hash tab
+int hash_find(HashTable* hsh, int iVer1, int iVer2);                        // ==> return the id found (in LstObj ), if 0 the object is not in the list
+int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh);    // ==> add this entry in the hash tab
+int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri);             // ==> suppress this entry in the hash tab
+int hash_bound(HashTable* hsh);                                             // ==> prints the number of edges on the boundary
+int hash_collision(HashTable* hsh);                                         // ==> prints the mean and max of collision of the HashTable 
+int hash_out(HashTable* hsh);                                               // ==> prints the HashTable
 
 //--- Fonction used for adaptation
 
@@ -109,7 +111,3 @@ int msh_write2dmetric(char* file, int nmetric, double3d* metric);
 int msh_write2dfield_Triangles(char* file, int nfield, double* field);
 int msh_write2dfield_Vertices(char* file, int nfield, double* field);
 
-
-//--- Quality meshes
-double Q1_el(Mesh* Msh, int3d* Tri);
-double Q2_el(Mesh* Msh, int3d* Tri);
