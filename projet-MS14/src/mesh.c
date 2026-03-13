@@ -609,7 +609,6 @@ int valid_edge(Mesh* Msh, int iTri, int iEdg)
     if(((iVer1== jVer1) && (iVer2 ==jVer2)) || ((iVer1 == jVer2) && (iVer2 == jVer1))) is_valid = 0;
   }
 
-  
   return is_valid;
 }
 
@@ -622,8 +621,8 @@ double* connex_comp(Mesh* Msh)
 
   // init
   double* color_trig = calloc(Msh->NbrTri +1, sizeof(double)); // stored color of the triangles
-  int* influence_ring = calloc(2*Msh->NbrTri +2, sizeof(int)); // neighbohood of the seed
-  int  nbr_influence = 0;                                      // number of triangles in the neighborhood
+  int* influence_ring = calloc(Msh->NbrTri +1 , sizeof(int));  // neighbohood of the seed, the pile   /!\ this might overload.
+  int  nbr_influence = 1;                                      // top of the pile
   int  nbr_colored = 0;                                        // number of colored triangles
   int  id_last_seed;                                           // last seed
   int  color=1;                                                // color of the CC
@@ -632,35 +631,41 @@ double* connex_comp(Mesh* Msh)
 
   id_last_seed = 1;
 
-  int trig_ring, i_ring;
+  int trig_ring;
 
   printf("starting the loop on sub domains \n");
-  while(id_last_seed<Msh->NbrTri &&nbr_colored<Msh->NbrTri+1  ) // loop on subdomains
+  while(id_last_seed<Msh->NbrTri && nbr_colored<Msh->NbrTri  ) // loop on subdomains
   {
     // init the seed
-    influence_ring[0]= id_last_seed;  nbr_influence =1;           
-    trig_ring = id_last_seed; i_ring=0;
+    influence_ring[1]= id_last_seed;  nbr_influence =1;           
+    trig_ring = id_last_seed;
 
-    while (trig_ring !=0 && nbr_colored<Msh->NbrTri+1)     // loop on the rings of neighbors      
+    // loop on the rings of neighbors  
+    while (trig_ring !=0 && (nbr_influence<Msh->NbrTri+1 && nbr_influence>0))         
     { 
-      trig_ring = influence_ring[i_ring];
+      trig_ring = influence_ring[nbr_influence];
 
       // if the element isn't colored, color it and add it's valid edges
       if(color_trig[trig_ring]==0)  
       {
-        color_trig[trig_ring] = color; nbr_colored +=1;
+
+        color_trig[trig_ring] = color; nbr_colored +=1;nbr_influence -=1;
         for(int i_edg=0; i_edg<3; i_edg++)
         {
           // an edge is valid if the edge isn't a border and the neighboring triangle isn't colored
           if(valid_edge(Msh,trig_ring,i_edg) && (color_trig[Msh->TriVoi[trig_ring][i_edg]] == 0 && Msh->TriVoi[trig_ring][i_edg] !=0))
           {
-            influence_ring[nbr_influence] = Msh->TriVoi[trig_ring][i_edg];  
+            // if the edge is valid, add on top of the pile
             nbr_influence +=1;
+            influence_ring[nbr_influence] = Msh->TriVoi[trig_ring][i_edg];  
           }
         }
       }
       // if the element is colored, skip to the next element
-      i_ring ++; 
+      // the pile is one less high.
+      else{ nbr_influence -=1;}
+      
+
     }
     // either all neighbors have been explored or all triangles have a color
     // if all triangles have a color, the main loop will stop
@@ -672,3 +677,7 @@ double* connex_comp(Mesh* Msh)
   printf("sub domains created. there is %d sub domaines \n",color-1);
   return color_trig;
 }
+
+// ============================================================================
+// ============================================================================
+
