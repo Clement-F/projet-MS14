@@ -65,7 +65,7 @@ typedef struct t_mesh {
   int1d* EfrRef; // boundary edges reference
 
   //--- Data for the list of edges
-  int2d* Edg; // indices of the two vertices composing the edge
+  int2d* Edg; // indices of the two vertices composing the edge    // <- serves nothing
 
 } Mesh;
 
@@ -111,3 +111,7 @@ int msh_write2dmetric(char* file, int nmetric, double3d* metric);
 int msh_write2dfield_Triangles(char* file, int nfield, double* field);
 int msh_write2dfield_Vertices(char* file, int nfield, double* field);
 
+//--- Fonction used for the CC
+
+int valid_edge(Mesh* Msh, int iTri, int iEdg);
+double* connex_comp(Mesh* Msh);

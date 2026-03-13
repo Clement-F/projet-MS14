@@ -12,10 +12,10 @@ int main(int argc, char* argv[])
 
   //--- read a mesh
   to        = clock();
-  Mesh* Msh = msh_read(argv[1], 0);
+  Mesh* Msh = msh_read(argv[1], 1);
   ti        = clock();
 
-  Mesh* Msh_Q = msh_read(argv[1], 0);
+  Mesh* Msh_Q = msh_read(argv[1], 1);
 
   if (!Msh)
     return 0;
@@ -90,22 +90,11 @@ int main(int argc, char* argv[])
   //=============================         Exercice 3        ========================================
   //================================================================================================
 
-  int* color = (int*)calloc((Msh->NbrTri+1),sizeof(int));
+  double* color = calloc((Msh->NbrTri+1),sizeof(double));
 
-  int ndomn = 0;
-  for(int iTri=1; iTri<= Msh->NbrTri; ++iTri)
-  {
-    if ( color [iTri] == 0 )
-    {
-    ndomn = ndomn + 1;
-    color [iTri] = ndomn;
-    
-    // boucle principale sur la taille de la pile
-      // dépiler le prochain élément de la pile
-      // vérifier les triangles voisins
-      // empiler les triangles vues par une arête non frontière et mettre leur couleur à ndomn
-    }
-  }
+  color = (connex_comp(Msh));
+  // for(int i=0; i<Msh->NbrTri+1; i++){printf("color of element %d : %f \n",i,color[i]);}
+  msh_write2dfield_Triangles("color.sol", Msh->NbrTri, color);
 
   //--- TODO: compute metric field
   double3d* Met = (double3d*)malloc(sizeof(double3d) * (Msh->NbrVer + 1));

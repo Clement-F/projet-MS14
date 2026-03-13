@@ -38,7 +38,7 @@ Mesh* msh_init()
   Msh->EfrRef = NULL;
 
   //--- Data for the list of edges
-  Msh->Edg = NULL;
+  Msh->Edg = NULL;                    // <- serves nothing
 
   return Msh;
 }
@@ -320,6 +320,9 @@ int msh_neighborsQ2(Mesh* Msh)
   return 1;
 }
 
+// ============================================================================
+// ============================================================================
+
 int msh_neighbors(Mesh* Msh)
 {
   printf(" init neighbors\n");
@@ -515,6 +518,9 @@ int hash_collision(HashTable* hsh)
   return 0;
 }
 
+// ============================================================================
+// ============================================================================
+
 int msh_write2dfield_Vertices(char* file, int nfield, double* field)
 {
   int iVer;
@@ -582,4 +588,87 @@ int msh_write2dmetric(char* file, int nmetric, double3d* metric)
   GmfCloseMesh(fmsh);
 
   return 1;
+}
+
+// ============================================================================
+// ============================================================================
+
+int valid_edge(Mesh* Msh, int iTri, int iEdg)
+{
+  int is_valid =1;
+  int jEdg,jVer1,jVer2;
+  int iVer1, iVer2;
+
+  iVer1 = Msh->Tri[iTri][tri2edg[iEdg][0]];
+  iVer2 = Msh->Tri[iTri][tri2edg[iEdg][1]];
+
+  for (jEdg = 0; jEdg < Msh->NbrEfrMax; jEdg++) {
+    jVer1 = Msh->Efr[jEdg][0];
+    jVer2 = Msh->Efr[jEdg][1];
+
+    if(((iVer1== jVer1) && (iVer2 ==jVer2)) || ((iVer1 == jVer2) && (iVer2 == jVer1))) is_valid = 0;
+  }
+
+  
+  return is_valid;
+}
+
+double* connex_comp(Mesh* Msh)
+{
+  printf("creating neighbors list of the mesh \n");
+  msh_neighbors(Msh) ;
+  printf("neighbors list of the mesh done \n");
+  printf("creating connex composante of the mesh \n");
+
+  // init
+  double* color_trig = calloc(Msh->NbrTri +1, sizeof(double)); // stored color of the triangles
+  int* influence_ring = calloc(2*Msh->NbrTri +2, sizeof(int)); // neighbohood of the seed
+  int  nbr_influence = 0;                                      // number of triangles in the neighborhood
+  int  nbr_colored = 0;                                        // number of colored triangles
+  int  id_last_seed;                                           // last seed
+  int  color=1;                                                // color of the CC
+
+  for(int i_trig=1;i_trig<Msh->NbrTri; i_trig++) color_trig[i_trig]=0;
+
+  id_last_seed = 1;
+
+  int trig_ring, i_ring;
+
+  printf("starting the loop on sub domains \n");
+  while(id_last_seed<Msh->NbrTri &&nbr_colored<Msh->NbrTri+1  ) // loop on subdomains
+  {
+    // init the seed
+    influence_ring[0]= id_last_seed;  nbr_influence =1;           
+    trig_ring = id_last_seed; i_ring=0;
+
+    while (trig_ring !=0 && nbr_colored<Msh->NbrTri+1)     // loop on the rings of neighbors      
+    { 
+      trig_ring = influence_ring[i_ring];
+
+      // if the element isn't colored, color it and add it's valid edges
+      if(color_trig[trig_ring]==0)  
+      {
+        color_trig[trig_ring] = color; nbr_colored +=1;
+        for(int i_edg=0; i_edg<3; i_edg++)
+        {
+          // an edge is valid if the edge isn't a border and the neighboring triangle isn't colored
+          if(valid_edge(Msh,trig_ring,i_edg) && (color_trig[Msh->TriVoi[trig_ring][i_edg]] == 0 && Msh->TriVoi[trig_ring][i_edg] !=0))
+          {
+            influence_ring[nbr_influence] = Msh->TriVoi[trig_ring][i_edg];  
+            nbr_influence +=1;
+          }
+        }
+      }
+      // if the element is colored, skip to the next element
+      i_ring ++; 
+    }
+    // either all neighbors have been explored or all triangles have a color
+    // if all triangles have a color, the main loop will stop
+    // if else create a new subdomain and restart the process
+  
+    color ++;
+    for(int trig_ = 1; trig_<Msh->NbrTri; trig_ ++){ if(color_trig[trig_]==0){id_last_seed = trig_; break;}}
+  }
+  printf("sub domains created. there is %d sub domaines \n",color-1);
+  return color_trig;
 }
