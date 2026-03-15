@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 
   printf("  time hash tab neigh.  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
-  //--- check solution
+  // --- check solution
   for(int tri_k=0;tri_k<Msh->NbrTri+1; tri_k++)
   {
     int Vois1 = Msh->TriVoi[tri_k][0]; int Vois2 = Msh->TriVoi[tri_k][1]; int Vois3 = Msh->TriVoi[tri_k][2];
@@ -53,7 +53,6 @@ int main(int argc, char* argv[])
 
   }
 
-  //--- TODO: compute mesh quality
 
   printf("Quality evaluation :\n");
   to = clock();
@@ -105,7 +104,7 @@ int main(int argc, char* argv[])
     Met[iVer][2] = 1.;
   }
 
-  msh_write2dmetric("metric.solb", Msh->NbrVer, Met);
+  msh_write2dmetric("metric.sol", Msh->NbrVer, Met);
 
   //--- Free memory
   if (Qal != NULL) {
@@ -115,6 +114,10 @@ int main(int argc, char* argv[])
   if (Met != NULL) {
     free(Met);
     Met = NULL;
+  }
+  if (color !=NULL){
+    free(color);
+    color = NULL;
   }
 
   return 0;
