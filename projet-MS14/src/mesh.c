@@ -445,18 +445,53 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
   return 0;
 }
 
+// NEED TEST
 int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an element of the hash table
 {
-
+  
   int i_hsh;
   i_hsh = hash_find(hsh,iVer1,iVer2); // check if the element is in the hash_list
-  // ================
-  // REDO !!!!!!
-  // ================
-  if(i_hsh ==0) return 0;
-  if(hsh->LstObj[hsh->NbrObj +1][2] ==iTri) hsh->LstObj[hsh->NbrObj +1][2] =0;
-  else if(hsh->LstObj[hsh->NbrObj +1][3] ==iTri) hsh->LstObj[hsh->NbrObj +1][3] =0;
-  else printf("  ## WARNING: HSH ELEMENT DOESNT HAVE TRIANGLE. IGNORED\n");
+
+  if(i_hsh ==0){ printf("\n DELETING A NON EXISTING ELEMENT, IGNORED \n ");}
+  if(i_hsh !=0)
+  {
+    // we redo the chain
+    int key = iVer1 + iVer2; 
+    int j_hsh = hsh->Head[key];
+    int i_bef = 0;
+    while(j_hsh!=0)
+    {
+      if(hsh->LstObj[j_hsh][0]==iVer1 && hsh->LstObj[j_hsh][1]==iVer2)
+      {
+        // sewing it
+        if(i_bef==0){hsh->Head[key]       =hsh->LstObj[j_hsh][4];} 
+        if(i_bef!=0){hsh->LstObj[i_bef][4]=hsh->LstObj[j_hsh][4];}
+
+        // permuting it with the last element
+        int last_index = hsh->NbrObj;
+        hsh->LstObj[j_hsh][0] = hsh->LstObj[last_index][0]; hsh->LstObj[j_hsh][1] =hsh->LstObj[last_index][1];
+        hsh->LstObj[j_hsh][2] = hsh->LstObj[last_index][2]; hsh->LstObj[j_hsh][3] =hsh->LstObj[last_index][3];
+        hsh->LstObj[j_hsh][4] = hsh->LstObj[last_index][4];
+
+        // sewing the last element's chain 
+        key = hsh->LstObj[last_index][0] + hsh->LstObj[last_index][1];
+        int k_hsh= hsh->Head[key];
+        
+        int j_bef = 0;
+        while(k_hsh!=0)
+        {
+          if(hsh->LstObj[k_hsh][0]==iVer1 && hsh->LstObj[k_hsh][1]==iVer2)
+          {
+            if(j_bef==0){hsh->Head[key]       =hsh->LstObj[k_hsh][4];} 
+            if(j_bef!=0){hsh->LstObj[j_bef][4]=hsh->LstObj[k_hsh][4];}
+          }
+          else k_hsh = hsh->LstObj[j_bef][4];
+        }
+        
+      }
+      else j_hsh = hsh->LstObj[j_hsh][4];      
+    } 
+  }
 
   return 0;
 }
