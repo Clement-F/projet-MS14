@@ -115,3 +115,5 @@ int msh_write2dfield_Vertices(char* file, int nfield, double* field);
 
 int valid_edge(Mesh* Msh, int iTri, int iEdg);
 double* connex_comp(Mesh* Msh);
+double quality(double2d P1, double2d P2, double2d P3);
+double surf(double2d P1, double2d P2, double2d P3);

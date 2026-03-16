@@ -715,6 +715,50 @@ double* connex_comp(Mesh* Msh)
   return color_trig;
 }
 
+double surf(double2d P1, double2d P2, double2d P3)
+{
+  double K_surf = fabs(0.5*((P2[0]-P1[0])*(P3[1]-P1[1]) - (P2[1]-P1[1])*(P3[0]-P1[0])));
+  if(K_surf < 1e-30){printf("ERROR SURFACE NULLE");}
+  return K_surf;
+}
+
+double quality(double2d P1, double2d P2, double2d P3)
+{
+  
+  double alpha = sqrt(3)/12;
+  double K_surf;
+
+  int i1,i2,i3; double a,b,c; 
+  
+  a = (P1[0]-P2[0])*(P1[0]-P2[0]) + (P1[1]-P2[1])*(P1[1]-P2[1]); 
+  b = (P2[0]-P3[0])*(P2[0]-P3[0]) + (P2[1]-P3[1])*(P2[1]-P3[1]); 
+  c = (P3[0]-P1[0])*(P3[0]-P1[0]) + (P3[1]-P1[1])*(P3[1]-P1[1]); 
+  K_surf = surf(P1,P2,P3);
+  
+  double Qal = alpha *(a+b+c)/K_surf; 
+  return Qal;
+}
+
 // ============================================================================
 // ============================================================================
 
+int ajout_point(Mesh* Msh, double2d Point)
+{
+  // localisation
+  int in_trig = 0; // 0 if in the triangle, 1 if it is. 
+  int trig_test =1;
+  int i1,i2,i3;
+  double ax1,ax2,ax3;
+  while(in_trig=0)
+  {
+    i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
+    double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
+    double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
+    double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
+    ax1 = surf(Point,P2,P3); ax2 = surf(P1,Point, P3); ax3 = surf(P1,P2,Point);
+    // 3 neighbours
+    
+  }
+  // Cavité
+  // Remplir
+}
