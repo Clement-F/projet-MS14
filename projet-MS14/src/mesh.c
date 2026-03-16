@@ -336,7 +336,7 @@ int msh_neighbors(Mesh* Msh)
   //--- initialize HashTable and set the hash table
   printf(" init hash\n");
   int SizHead = 2*(Msh->NbrVerMax);
-  int NbrMaxObj = Msh->NbrVer + Msh->NbrTri ; // Euler caracteristique with a bit of security
+  int NbrMaxObj = Msh->NbrVerMax + Msh->NbrTriMax ; // Euler caracteristique with a bit of security
 
 
   HashTable* hsh = hash_init(SizHead, NbrMaxObj); 
@@ -424,6 +424,9 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
 
   if(i_hsh==0)
   {
+    if(hsh->NbrObj> hsh->NbrMaxObj+1) printf("  ## WARNING: HSH ELEMENT ALREADY FULL. IGNORED\n");
+    // printf("adding element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", hsh->NbrObj, iVer1,iVer2, iTri, hsh->LstObj[hsh->NbrObj][3], hsh->LstObj[hsh->NbrObj][4]);
+
     hsh->LstObj[hsh->NbrObj +1][0] = iVer1;
     hsh->LstObj[hsh->NbrObj +1][1] = iVer2;
     hsh->LstObj[hsh->NbrObj +1][2] = iTri; 
@@ -431,8 +434,7 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
     hsh->LstObj[hsh->NbrObj +1][4] = hsh->Head[iVer1+iVer2];  
     hsh->NbrObj +=1;
     hsh->Head[iVer1+iVer2] = hsh->NbrObj;   
-    // printf("adding element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", hsh->NbrObj, iVer1,iVer2, iTri, hsh->LstObj[hsh->NbrObj][3], hsh->LstObj[hsh->NbrObj][4]);
-    if(hsh->NbrObj> hsh->NbrMaxObj) printf("  ## WARNING: HSH ELEMENT ALREADY FULL. IGNORED\n");
+    
   }
 
   if(i_hsh !=0)
