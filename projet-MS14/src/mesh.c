@@ -728,7 +728,7 @@ double quality(double2d P1, double2d P2, double2d P3)
   double alpha = sqrt(3)/12;
   double K_surf;
 
-  int i1,i2,i3; double a,b,c; 
+  double a,b,c; 
   
   a = (P1[0]-P2[0])*(P1[0]-P2[0]) + (P1[1]-P2[1])*(P1[1]-P2[1]); 
   b = (P2[0]-P3[0])*(P2[0]-P3[0]) + (P2[1]-P3[1])*(P2[1]-P3[1]); 
@@ -742,23 +742,114 @@ double quality(double2d P1, double2d P2, double2d P3)
 // ============================================================================
 // ============================================================================
 
+int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3)
+{
+  double R, dist;
+  double a,b,c,K_surf; 
+  a = (P1[0]-P2[0])*(P1[0]-P2[0]) + (P1[1]-P2[1])*(P1[1]-P2[1]); 
+  b = (P2[0]-P3[0])*(P2[0]-P3[0]) + (P2[1]-P3[1])*(P2[1]-P3[1]); 
+  c = (P3[0]-P1[0])*(P3[0]-P1[0]) + (P3[1]-P1[1])*(P3[1]-P1[1]); 
+  K_surf = surf(P1,P2,P3);
+
+  R = sqrt(a*b*c)/(4*K_surf);
+  double coord1,coord2,coord3;
+  coord1 = a*(b+c-a); coord2 = b*(c+a-b); coord3 = c*(b+a-c);
+  double2d P =  {coord1*P1[0]+ coord2*P2[0]+ coord3*P3[0],coord1*P1[1]+ coord2*P2[1]+ coord3*P3[1]};
+  dist = (P[0]-Point[0])* (P[0]-Point[0]) +  (P[1]-Point[1])*(P[1]-Point[1]);
+  
+  if(dist>R*R) return 0;
+  if(dist<=R*R)return 1;
+}
+
 int ajout_point(Mesh* Msh, double2d Point)
 {
   // localisation
   int in_trig = 0; // 0 if in the triangle, 1 if it is. 
-  int trig_test =1;
+  int iTri =1;
   int i1,i2,i3;
   double ax1,ax2,ax3;
-  while(in_trig=0)
+  while(iTri=0)
   {
     i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
     double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
     double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
     double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
+
     ax1 = surf(Point,P2,P3); ax2 = surf(P1,Point, P3); ax3 = surf(P1,P2,Point);
-    // 3 neighbours
-    
+
+    //check
+    if(ax1<0 && (ax2<0 && ax3<0) ) printf("\n ERROR POINT OR TRIANGLE WRONGLY DEFINED, IGNORED \n");
+
+    // 3 direct neighbours
+    if(ax1<0) iTri = Msh->TriVoi[iTri][0];
+    if(ax2<0) iTri = Msh->TriVoi[iTri][1];
+    if(ax3<0) iTri = Msh->TriVoi[iTri][2];
+
+    // 3 non direct neighbours
+    // if(ax1<0 && ax2<0) iTri = Msh->TriVoi[Msh->TriVoi[iTri][0]][0];
+    // if(ax2<0 && ax3<0) iTri = Msh->TriVoi[Msh->TriVoi[iTri][0]][0];
+    // if(ax3<0 && ax1<0) iTri = Msh->TriVoi[Msh->TriVoi[iTri][0]][0];
+
+    if(ax1>0 && (ax2>0 && ax3>0)) in_trig=1;
   }
-  // Cavité
+
+  int id_tri = iTri;
+
+  // Cavitity
+  int* pile   = calloc(Msh->NbrTri +1, sizeof(int));  // pile of element to add to the mavity field 
+  int* cavity = calloc(Msh->NbrTri +1, sizeof(int));  // elements to remove
+  int  sizeof_pile = 1;                               // size of the pile / index of the top of the pile
+  int  sizeof_cavity = 0;                             // size of the cavity/index of the last element added to the cavity 
+  
+  pile[0] = id_tri;
+  int jTri, jEdg;
+  int Is_In_Pile, Is_In_Cavity;
+
+  while(sizeof_pile>0)
+  {
+    // add the element to the cavity and remove it from the pile
+    iTri = pile[sizeof_pile]; sizeof_pile -=1;
+    cavity[sizeof_cavity] = iTri; sizeof_cavity +=1;
+
+    // check if the neighbours are in the cavity
+    for(int jEdg=0;jEdg<3; jEdg++) 
+    {
+      jTri = Msh->TriVoi[iTri][jEdg];
+      i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
+      double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1]};
+      double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1]};
+      double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1]};
+
+
+      // check if the element hasn't already been added
+      for(int i=0;i<sizeof_cavity; i++) if(cavity[i]==jTri ){ Is_In_Cavity = 1; break;}
+      for(int i=0;i<sizeof_pile  ; i++) if(pile[i]  ==jTri ){ Is_In_Pile   = 1; break;}
+
+      if(Is_In_Cavity==0 && Is_In_Pile==0)
+      {
+        // if it's inside the circle      
+        if(Is_Inside_Circle(Point, P1,P2,P3)==1)
+        {
+          // add to the pile    
+          sizeof_pile+=1;
+          pile[sizeof_pile] = jTri;
+        }
+      }
+    }
+  }
+
+  // deleting the elements of the cavity
+  for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
+  {
+    // deleting the triangle
+    Msh->Tri[i_cavity]=0; 
+
+    // deleting it from it's neighbours's list of neighbours
+    for(int i=0; i<3; i++)
+    {
+    Msh->TriVoi[Msh->TriVoi[i_cavity][i]];
+    }
+  }
+
   // Remplir
 }
