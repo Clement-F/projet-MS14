@@ -43,6 +43,20 @@ typedef long long int          lint1d;
 
 */
 
+//--- A provided simple hash table data structure
+typedef struct hash_table {
+  int    SizHead; // Maximum key value, the key is in [0,SizHead-1]
+  int    NbrObj; // Number of objects in the hash table
+  int    NbrMaxObj; // Maximum number of objects that can be store in the hash tab
+  int*   Head; // Head[key%(SizHead)] = link to the first object having this key in the LstObj list
+  int5d* LstObj; // List of objects in the hash table
+
+  // LstObj[id][0:1] = iVer1-iVer2, the two vertices defining the edge
+  // LstObj[id][2:3] = iTri1,iTri2, the two neighboring triangles having iVer1-iVer2 as vertices
+  // LstObj[id][4]   = idxNxt,       the link to the next element in collision, if = 0 last element of the list
+
+} HashTable;
+
 typedef struct t_mesh {
   int Dim;
   int NbrVer, NbrTri, NbrEfr, NbrEdg;
@@ -67,6 +81,8 @@ typedef struct t_mesh {
   //--- Data for the list of edges
   int2d* Edg; // indices of the two vertices composing the edge    // <- serves nothing
 
+  //--- Hastable associated with it 
+  HashTable* Hsh;
 } Mesh;
 
 //--- Provided functions
@@ -79,20 +95,6 @@ double* sol_read(char* file, int mshDim, int mshNbrSol);
 int msh_boundingbox(Mesh* Msh); // compute the bouding box of the mesh
 int msh_neighbors(Mesh* Msh); // build TriVoi with a hash table
 int msh_neighborsQ2(Mesh* Msh); // build TriVoi with the naive quadratic approach
-
-//--- A provided simple hash table data structure
-typedef struct hash_table {
-  int    SizHead; // Maximum key value, the key is in [0,SizHead-1]
-  int    NbrObj; // Number of objects in the hash table
-  int    NbrMaxObj; // Maximum number of objects that can be store in the hash tab
-  int*   Head; // Head[key%(SizHead)] = link to the first object having this key in the LstObj list
-  int5d* LstObj; // List of objects in the hash table
-
-  // LstObj[id][0:1] = iVer1-iVer2, the two vertices defining the edge
-  // LstObj[id][2:3] = iTri1,iTri2, the two neighboring triangles having iVer1-iVer2 as vertices
-  // LstObj[id][4]   = idxNxt,       the link to the next element in collision, if = 0 last element of the list
-
-} HashTable;
 
 //--- Implementing the following function should be necessary
 HashTable* hash_init(int SizHead, int NbrMaxObj);                           // alloc and set htable ==> allocate Head, LstObj

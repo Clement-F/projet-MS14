@@ -454,9 +454,14 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
   int i_hsh;
   i_hsh = hash_find(hsh,iVer1,iVer2); // check if the element is in the hash_list
 
+
   if(i_hsh ==0){ printf("\n DELETING A NON EXISTING ELEMENT, IGNORED \n ");}
   if(i_hsh !=0)
   {
+    int ToDelete=0;
+    if((hsh->LstObj[i_hsh][2]!=0 && hsh->LstObj[i_hsh][3]==0) || (hsh->LstObj[i_hsh][3]!=0 && hsh->LstObj[i_hsh][2]==0)) ToDelete = 1;
+    if(ToDelete==1)
+    {
     // we redo the chain
     int key = iVer1 + iVer2; 
     int j_hsh = hsh->Head[key];
@@ -493,8 +498,19 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
       }
       else j_hsh = hsh->LstObj[j_hsh][4];      
     } 
-  }
+    }
 
+    // we put an element to 0 and potentially put the element in a "good form"
+    if(ToDelete==0)
+    {
+      if(hsh->LstObj[i_hsh][3]==iTri) hsh->LstObj[i_hsh][3]=0;
+      if(hsh->LstObj[i_hsh][2]==iTri) 
+      {
+        hsh->LstObj[i_hsh][2]= hsh->LstObj[i_hsh][3];
+        hsh->LstObj[i_hsh][3]= 0;
+      }  
+    }
+  }
   return 0;
 }
 
@@ -758,17 +774,19 @@ int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3)
   dist = (P[0]-Point[0])* (P[0]-Point[0]) +  (P[1]-Point[1])*(P[1]-Point[1]);
   
   if(dist>R*R) return 0;
-  if(dist<=R*R)return 1;
+  if(dist<=R*R) return 1;
+
+  return -1;
 }
 
 int ajout_point(Mesh* Msh, double2d Point)
 {
-  // localisation
+  // localisation of the point in the Mesh
   int in_trig = 0; // 0 if in the triangle, 1 if it is. 
   int iTri =1;
   int i1,i2,i3;
   double ax1,ax2,ax3;
-  while(iTri=0)
+  while(in_trig ==0)
   {
     i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
     double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
@@ -795,14 +813,14 @@ int ajout_point(Mesh* Msh, double2d Point)
 
   int id_tri = iTri;
 
-  // Cavitity
+  // calculting the elements to add to the cavity
   int* pile   = calloc(Msh->NbrTri +1, sizeof(int));  // pile of element to add to the mavity field 
   int* cavity = calloc(Msh->NbrTri +1, sizeof(int));  // elements to remove
   int  sizeof_pile = 1;                               // size of the pile / index of the top of the pile
   int  sizeof_cavity = 0;                             // size of the cavity/index of the last element added to the cavity 
   
   pile[0] = id_tri;
-  int jTri, jEdg;
+  int jTri;
   int Is_In_Pile, Is_In_Cavity;
 
   while(sizeof_pile>0)
@@ -839,17 +857,152 @@ int ajout_point(Mesh* Msh, double2d Point)
   }
 
   // deleting the elements of the cavity
+  int Tri_neigh,i_obj,iVer1,iVer2;
+
+  int sizeof_boundary=0;
+  int* boundary_cavity; 
+  boundary_cavity = calloc(2*(Msh->NbrVer) +1 , sizeof(int));
+
   for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
   {
-    // deleting the triangle
-    Msh->Tri[i_cavity]=0; 
-
+    //----------------------------------------------------------------------------------
     // deleting it from it's neighbours's list of neighbours
     for(int i=0; i<3; i++)
     {
-    Msh->TriVoi[Msh->TriVoi[i_cavity][i]];
+    Tri_neigh =Msh->TriVoi[i_cavity][i]; // check all neighbours 
+    for(int j=0; j<3; j++) if(Msh->TriVoi[Tri_neigh][j]==i_cavity) Msh->TriVoi[Tri_neigh][j] = 0; // removing it from their neighbours
     }
-  }
+    //----------------------------------------------------------------------------------
+    // deleting the edge from the Hashtable and calculating the boundary of the cavity
+    for(int i_Edg=0;i_Edg<3;i_Edg++)
+    {
+      iVer1 = Msh->Tri[i_cavity][tri2edg[i_Edg][0]];
+      iVer2 = Msh->Tri[i_cavity][tri2edg[i_Edg][1]];
+      i_obj=hash_find(Msh->Hsh,iVer1,iVer2);             
+      hash_suppr(Msh->Hsh,iVer1,iVer2,i_cavity);
+    }
+    //----------------------------------------------------------------------------------   
+  } 
+  
+  for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
+  {
+    for(int i_Edg=0;i_Edg<3;i_Edg++)
+    {
+      iVer1 = Msh->Tri[i_cavity][tri2edg[i_Edg][0]];
+      iVer2 = Msh->Tri[i_cavity][tri2edg[i_Edg][1]];
+      i_obj=hash_find(Msh->Hsh,iVer1,iVer2);
+      Is_In_Cavity =0;
+      for(int i=0;i<sizeof_boundary;i++) 
+      {
+        if((boundary_cavity[i]==i_obj))
+        { 
+          // if it is in the boundary -> remove it  
+          Is_In_Cavity= 1;
+          boundary_cavity[i]=boundary_cavity[sizeof_boundary];
+          boundary_cavity[sizeof_boundary]=0;
+          sizeof_boundary -=1;
+          break;
+        }
+      }     
+        
+      // if it is not in the boundary -> adding it
+      if(Is_In_Cavity==0)
+      {
+      boundary_cavity[sizeof_boundary]=i_obj;
+      sizeof_boundary +=1;
+      }
+    } 
+  } 
 
-  // Remplir
+  // Filling the cavity with the star centered on P
+  
+  // ===========================================================================
+  // realloc the memory
+  // NbrTri & Tri & TriVoi & TriRef 
+  Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary - sizeof_cavity;
+  Msh->NbrTri = Msh->NbrTri + sizeof_boundary - sizeof_cavity;
+
+  int3d* temp_Tri = realloc(Msh->Tri, Msh->NbrTriMax*sizeof(int3d));
+  if (temp_Tri == NULL) {
+    // If reallocation fails
+    printf("ERROR. Unable to resize memory");
+  } else {
+    // If reallocation is successful
+    Msh->Tri = temp_Tri;  // Update ptr1 to point to the newly allocated memory
+    free(temp_Tri); 
+    temp_Tri= NULL;
+  } 
+  
+  
+  int1d* temp_Ref = realloc(Msh->TriRef, Msh->NbrTriMax*sizeof(int1d));
+  if (temp_Ref == NULL) {
+    // If reallocation fails
+    printf("ERROR. Unable to resize memory");
+  } else {
+    // If reallocation is successful
+    Msh->TriRef = temp_Ref;  // Update ptr1 to point to the newly allocated memory
+    
+    free(temp_Ref); 
+    temp_Ref= NULL;
+  } 
+
+  int3d* temp_Voi = realloc(Msh->TriVoi, Msh->NbrTriMax*sizeof(int3d));
+  if (temp_Voi == NULL) {
+    // If reallocation fails
+    printf("ERROR. Unable to resize memory");
+  } else {
+    // If reallocation is successful
+    Msh->TriVoi = temp_Voi;  // Update ptr1 to point to the newly allocated memory
+    
+    free(temp_Voi); 
+    temp_Voi= NULL;
+  } 
+
+  Msh->NbrVer +=1; Msh->NbrVerMax +=1;
+  
+  double2d* temp_crd = realloc(Msh->Crd, Msh->NbrVerMax*sizeof(double2d));
+  if (temp_crd == NULL) {
+    // If reallocation fails
+    printf("ERROR. Unable to resize memory");
+  } else {
+    // If reallocation is successful
+    Msh->Crd = temp_crd;  // Update ptr1 to point to the newly allocated memory
+    Msh->Crd[Msh->NbrVer][0] = Point[0];
+    Msh->Crd[Msh->NbrVer][1] = Point[1];
+    
+    free(temp_crd); 
+    temp_crd= NULL;
+    } 
+
+
+  // ===========================================================================
+
+  for(int i_boundary=0; i_boundary<sizeof_boundary; i_boundary++)
+  {  
+    // add to Tri
+    iVer1 = Msh->Hsh->LstObj[boundary_cavity[i_boundary]][0]; 
+    iVer2 = Msh->Hsh->LstObj[boundary_cavity[i_boundary]][1]; 
+    
+    if(surf(Msh->Crd[iVer1],Msh->Crd[iVer2],Point)<0)
+    {
+    Msh->Tri[cavity[sizeof_cavity]][0]= iVer2;
+    Msh->Tri[cavity[sizeof_cavity]][1]= iVer1;
+    Msh->Tri[cavity[sizeof_cavity]][2]= Msh->NbrVer;
+    }
+    else
+    {      
+      Msh->Tri[cavity[sizeof_cavity]][0]= iVer1;
+      Msh->Tri[cavity[sizeof_cavity]][1]= iVer2;
+      Msh->Tri[cavity[sizeof_cavity]][2]= Msh->NbrVer;
+    }
+    
+    // update the hashtable
+    hash_add(Msh->Hsh,iVer1,Msh->NbrVer,cavity[sizeof_cavity],boundary_cavity[i_boundary]);
+    hash_add(Msh->Hsh,iVer2,Msh->NbrVer,cavity[sizeof_cavity],boundary_cavity[i_boundary]);
+    
+  }
+  return 0;
 }
+
+// ============================================================================
+// ============================================================================
