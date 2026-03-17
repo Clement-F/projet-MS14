@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
   Mesh* Msh = msh_read(argv[1], 1);
   ti        = clock();
 
-  Mesh* Msh_Q = msh_read(argv[1], 1);
+  // Mesh* Msh_Q = msh_read(argv[1], 1);
 
   if (!Msh)
     return 0;
@@ -25,9 +25,9 @@ int main(int argc, char* argv[])
   printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   //--- create neigbhors Q2 version
-  to = clock();
-  msh_neighborsQ2(Msh_Q);
-  ti = clock();
+  // to = clock();
+  // msh_neighborsQ2(Msh_Q);
+  // ti = clock();
 
   printf("  time q2 neigh.        %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
@@ -39,29 +39,26 @@ int main(int argc, char* argv[])
   printf("  time hash tab neigh.  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   // --- check solution
-  for(int tri_k=0;tri_k<Msh->NbrTri+1; tri_k++)
-  {
-    int Vois1 = Msh->TriVoi[tri_k][0]; int Vois2 = Msh->TriVoi[tri_k][1]; int Vois3 = Msh->TriVoi[tri_k][2];
-    int Vois1_Q = Msh_Q->TriVoi[tri_k][0]; int Vois2_Q = Msh_Q->TriVoi[tri_k][1]; int Vois3_Q = Msh_Q->TriVoi[tri_k][2];
+  // for(int tri_k=0;tri_k<Msh->NbrTri+1; tri_k++)
+  // {
+  //   int Vois1 = Msh->TriVoi[tri_k][0]; int Vois2 = Msh->TriVoi[tri_k][1]; int Vois3 = Msh->TriVoi[tri_k][2];
+  //   int Vois1_Q = Msh_Q->TriVoi[tri_k][0]; int Vois2_Q = Msh_Q->TriVoi[tri_k][1]; int Vois3_Q = Msh_Q->TriVoi[tri_k][2];
 
-    if(!((Vois1 == Vois1_Q && Vois2 == Vois2_Q) && Vois3 == Vois3_Q))
-    {
-      printf(" ERROR NEIGHBOR AT %d \n", tri_k);
-      printf(" Neighbors Q : %d, %d, %d \n", Vois1_Q, Vois2_Q, Vois3_Q);
-      printf(" Neighbors : %d, %d, %d \n", Vois1, Vois2, Vois3);
-    } 
+  //   if(!((Vois1 == Vois1_Q && Vois2 == Vois2_Q) && Vois3 == Vois3_Q))
+  //   {
+  //     printf(" ERROR NEIGHBOR AT %d \n", tri_k);
+  //     printf(" Neighbors Q : %d, %d, %d \n", Vois1_Q, Vois2_Q, Vois3_Q);
+  //     printf(" Neighbors : %d, %d, %d \n", Vois1, Vois2, Vois3);
+  //   } 
 
-  }
+  // }
 
 
   printf("Quality evaluation :\n");
   to = clock();
   double* Qal = (double*)malloc(sizeof(double) * (Msh->NbrTri + 1));
 
-  double alpha = sqrt(3)/12;
-  double K_surf;
-
-  int i1,i2,i3; double a,b,c; 
+  int i1,i2,i3;
 
   for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
   // printf("calc %d \n",iTri);
@@ -81,8 +78,12 @@ int main(int argc, char* argv[])
   //=================================         TP2        ===========================================
   //================================================================================================
 
+  hash_out(Msh->Hsh);
+  double2d P = {0.5,0.6};
+  ajout_point(Msh,P);
+  hash_out(Msh->Hsh);
 
-
+  msh_write(Msh,"ModifiedMesh.mesh");
 
 
 
@@ -96,11 +97,11 @@ int main(int argc, char* argv[])
   //=============================         Exercice 3        ========================================
   //================================================================================================
 
-  double* color = calloc((Msh->NbrTri+1),sizeof(double));
+  // double* color = calloc((Msh->NbrTri+1),sizeof(double));
 
-  color = (connex_comp(Msh));
-  // for(int i=0; i<Msh->NbrTri+1; i++){printf("color of element %d : %f \n",i,color[i]);}
-  msh_write2dfield_Triangles("color.sol", Msh->NbrTri, color);
+  // color = (connex_comp(Msh));
+  // // for(int i=0; i<Msh->NbrTri+1; i++){printf("color of element %d : %f \n",i,color[i]);}
+  // msh_write2dfield_Triangles("color.sol", Msh->NbrTri, color);
 
   //--- TODO: compute metric field
   double3d* Met = (double3d*)malloc(sizeof(double3d) * (Msh->NbrVer + 1));
@@ -122,10 +123,10 @@ int main(int argc, char* argv[])
     free(Met);
     Met = NULL;
   }
-  if (color !=NULL){
-    free(color);
-    color = NULL;
-  }
+  // if (color !=NULL){
+  //   free(color);
+  //   color = NULL;
+  // }
 
   return 0;
 }

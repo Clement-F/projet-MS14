@@ -371,6 +371,7 @@ int msh_neighbors(Mesh* Msh)
   hash_bound(hsh);
   hash_collision(hsh);
 
+  Msh->Hsh = hsh;
   return 1;
 }
 
@@ -450,10 +451,8 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
 // NEED TEST
 int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an element of the hash table
 {
-  
   int i_hsh;
   i_hsh = hash_find(hsh,iVer1,iVer2); // check if the element is in the hash_list
-
 
   if(i_hsh ==0){ printf("\n DELETING A NON EXISTING ELEMENT, IGNORED \n ");}
   if(i_hsh !=0)
@@ -516,7 +515,7 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
 
 int hash_out(HashTable* hsh)  // print the hash table
 {
-  for(int j=0;j<hsh->NbrMaxObj;j++){
+  for(int j=1;j<hsh->NbrMaxObj;j++){
     printf("indices = %d \n", j);
     printf("Vertexes  : %d, %d \n", hsh->LstObj[j][0], hsh->LstObj[j][1]);
     printf("Triangles : %d, %d \n", hsh->LstObj[j][2], hsh->LstObj[j][3]);
@@ -733,8 +732,7 @@ double* connex_comp(Mesh* Msh)
 
 double surf(double2d P1, double2d P2, double2d P3)
 {
-  double K_surf = fabs(0.5*((P2[0]-P1[0])*(P3[1]-P1[1]) - (P2[1]-P1[1])*(P3[0]-P1[0])));
-  if(K_surf < 1e-30){printf("ERROR SURFACE NULLE");}
+  double K_surf = (0.5*((P2[0]-P1[0])*(P3[1]-P1[1]) - (P2[1]-P1[1])*(P3[0]-P1[0])));
   return K_surf;
 }
 
@@ -749,7 +747,10 @@ double quality(double2d P1, double2d P2, double2d P3)
   a = (P1[0]-P2[0])*(P1[0]-P2[0]) + (P1[1]-P2[1])*(P1[1]-P2[1]); 
   b = (P2[0]-P3[0])*(P2[0]-P3[0]) + (P2[1]-P3[1])*(P2[1]-P3[1]); 
   c = (P3[0]-P1[0])*(P3[0]-P1[0]) + (P3[1]-P1[1])*(P3[1]-P1[1]); 
-  K_surf = surf(P1,P2,P3);
+  K_surf = fabs(surf(P1,P2,P3));
+  
+  if(K_surf < 1e-30){printf("\n ---- \n ERROR SURFACE NULLE (%f,%f),(%f,%f) (%f,%f) \n ---- \n",
+                                                    P1[0],P1[1], P2[0],P2[1], P3[0],P3[1]);}
   
   double Qal = alpha *(a+b+c)/K_surf; 
   return Qal;
@@ -781,13 +782,20 @@ int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3)
 
 int ajout_point(Mesh* Msh, double2d Point)
 {
+  //TODO
+  // add the case -> on line
+  // add the case -> on vertex
+
   // localisation of the point in the Mesh
+  printf(" \n ======================= \n \n");
+  printf(" INIT the method \n");
   int in_trig = 0; // 0 if in the triangle, 1 if it is. 
   int iTri =1;
   int i1,i2,i3;
   double ax1,ax2,ax3;
   while(in_trig ==0)
   {
+    printf(" In triangle : %d \n",iTri);
     i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
     double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
     double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
@@ -802,14 +810,15 @@ int ajout_point(Mesh* Msh, double2d Point)
     if(ax1<0) iTri = Msh->TriVoi[iTri][0];
     if(ax2<0) iTri = Msh->TriVoi[iTri][1];
     if(ax3<0) iTri = Msh->TriVoi[iTri][2];
-
-    // 3 non direct neighbours
-    // if(ax1<0 && ax2<0) iTri = Msh->TriVoi[Msh->TriVoi[iTri][0]][0];
-    // if(ax2<0 && ax3<0) iTri = Msh->TriVoi[Msh->TriVoi[iTri][0]][0];
-    // if(ax3<0 && ax1<0) iTri = Msh->TriVoi[Msh->TriVoi[iTri][0]][0];
-
+    
+    printf(" going in direction : (%d,%d,%d) \n", ax1>0, ax2>0, ax3>0);
     if(ax1>0 && (ax2>0 && ax3>0)) in_trig=1;
   }
+
+  
+  printf(" \n ======================= \n \n");
+  printf(" Point localised in Triangle : %d \n", iTri);
+  printf(" starting the cavity search \n");
 
   int id_tri = iTri;
 
@@ -819,7 +828,7 @@ int ajout_point(Mesh* Msh, double2d Point)
   int  sizeof_pile = 1;                               // size of the pile / index of the top of the pile
   int  sizeof_cavity = 0;                             // size of the cavity/index of the last element added to the cavity 
   
-  pile[0] = id_tri;
+  pile[1] = id_tri;
   int jTri;
   int Is_In_Pile, Is_In_Cavity;
 
@@ -829,10 +838,15 @@ int ajout_point(Mesh* Msh, double2d Point)
     iTri = pile[sizeof_pile]; sizeof_pile -=1;
     cavity[sizeof_cavity] = iTri; sizeof_cavity +=1;
 
+    printf(" adding %d to the pile \n",iTri);
+    printf(" checking it's neighbours \n");
+
     // check if the neighbours are in the cavity
     for(int jEdg=0;jEdg<3; jEdg++) 
     {
       jTri = Msh->TriVoi[iTri][jEdg];
+      printf(" neighbour : %d \n", jTri);
+
       i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
       double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1]};
       double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1]};
@@ -840,11 +854,12 @@ int ajout_point(Mesh* Msh, double2d Point)
 
 
       // check if the element hasn't already been added
-      for(int i=0;i<sizeof_cavity; i++) if(cavity[i]==jTri ){ Is_In_Cavity = 1; break;}
-      for(int i=0;i<sizeof_pile  ; i++) if(pile[i]  ==jTri ){ Is_In_Pile   = 1; break;}
+      for(int i=0;i<sizeof_cavity; i++) if(cavity[i]==jTri ){ Is_In_Cavity = 1; printf("the neighbours was in the cavity \n"); break;}
+      for(int i=0;i<sizeof_pile  ; i++) if(pile[i]  ==jTri ){ Is_In_Pile   = 1; printf("the neighbours was in the pile   \n");break;}
 
-      if(Is_In_Cavity==0 && Is_In_Pile==0)
+      if(Is_In_Cavity==0 && Is_In_Pile==0 && jTri !=0)
       {
+        printf("the neighbour wasn't in the pile \n");
         // if it's inside the circle      
         if(Is_Inside_Circle(Point, P1,P2,P3)==1)
         {
@@ -855,6 +870,13 @@ int ajout_point(Mesh* Msh, double2d Point)
       }
     }
   }
+
+
+  printf(" \n ======================= \n \n");
+  printf(" cavity search done \n");
+  printf(" we will be deleting %d elements \n", sizeof_cavity);
+  printf(" we will delete the elements : \n");
+  for(int i=0; i<sizeof_cavity;i++){ printf(" Tri %d : (%d,%d,%d) \n", cavity[i], Msh->Tri[cavity[i]][0], Msh->Tri[cavity[i]][1], Msh->Tri[cavity[i]][2] );}
 
   // deleting the elements of the cavity
   int Tri_neigh,i_obj,iVer1,iVer2;
@@ -867,31 +889,44 @@ int ajout_point(Mesh* Msh, double2d Point)
   {
     //----------------------------------------------------------------------------------
     // deleting it from it's neighbours's list of neighbours
+    printf(" deleting from the neighbours' list \n");
     for(int i=0; i<3; i++)
     {
-    Tri_neigh =Msh->TriVoi[i_cavity][i]; // check all neighbours 
-    for(int j=0; j<3; j++) if(Msh->TriVoi[Tri_neigh][j]==i_cavity) Msh->TriVoi[Tri_neigh][j] = 0; // removing it from their neighbours
+      Tri_neigh =Msh->TriVoi[cavity[i_cavity]][i]; printf(" %d ",Tri_neigh ); // check all neighbours 
+      for(int j=0; j<3; j++)
+      {
+        // printf(" checking neighbours %d",Tri_neigh)
+        if(Msh->TriVoi[Tri_neigh][j]==cavity[i_cavity]) Msh->TriVoi[Tri_neigh][j] = 0; // removing it from their neighbours
+      }
     }
+    printf("\n");
+
     //----------------------------------------------------------------------------------
     // deleting the edge from the Hashtable and calculating the boundary of the cavity
     for(int i_Edg=0;i_Edg<3;i_Edg++)
     {
-      iVer1 = Msh->Tri[i_cavity][tri2edg[i_Edg][0]];
-      iVer2 = Msh->Tri[i_cavity][tri2edg[i_Edg][1]];
-      i_obj=hash_find(Msh->Hsh,iVer1,iVer2);             
-      hash_suppr(Msh->Hsh,iVer1,iVer2,i_cavity);
+      printf(" deleting from the hashtable element %d's edge %d \n", cavity[i_cavity],i_Edg);
+      iVer1 = Msh->Tri[cavity[i_cavity]][tri2edg[i_Edg][0]];
+      iVer2 = Msh->Tri[cavity[i_cavity]][tri2edg[i_Edg][1]];
+      printf("deleting (%d,%d) \n",iVer1,iVer2); 
+      i_obj=hash_find(Msh->Hsh,iVer1,iVer2);   
+      printf(" i.e object : %d \n",i_obj);        
+      if(i_obj!=0) hash_suppr(Msh->Hsh,iVer1,iVer2,cavity[i_cavity]);
     }
     //----------------------------------------------------------------------------------   
   } 
-  
+  printf(" \n ====================================== \n");
+  printf(" creating the boundary of the cavity \n");
   for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
   {
+    printf(" checking element : %d \n", cavity[i_cavity]);
     for(int i_Edg=0;i_Edg<3;i_Edg++)
     {
-      iVer1 = Msh->Tri[i_cavity][tri2edg[i_Edg][0]];
-      iVer2 = Msh->Tri[i_cavity][tri2edg[i_Edg][1]];
+      iVer1 = Msh->Tri[cavity[i_cavity]][tri2edg[i_Edg][0]];
+      iVer2 = Msh->Tri[cavity[i_cavity]][tri2edg[i_Edg][1]];
       i_obj=hash_find(Msh->Hsh,iVer1,iVer2);
       Is_In_Cavity =0;
+
       for(int i=0;i<sizeof_boundary;i++) 
       {
         if((boundary_cavity[i]==i_obj))
@@ -900,6 +935,7 @@ int ajout_point(Mesh* Msh, double2d Point)
           Is_In_Cavity= 1;
           boundary_cavity[i]=boundary_cavity[sizeof_boundary];
           boundary_cavity[sizeof_boundary]=0;
+          printf(" removing element (%d,%d) \n", iVer1, iVer2);
           sizeof_boundary -=1;
           break;
         }
@@ -908,21 +944,38 @@ int ajout_point(Mesh* Msh, double2d Point)
       // if it is not in the boundary -> adding it
       if(Is_In_Cavity==0)
       {
+      printf(" adding element (%d,%d) \n", iVer1, iVer2);
       boundary_cavity[sizeof_boundary]=i_obj;
       sizeof_boundary +=1;
       }
     } 
   } 
+  
+  printf(" \n ====================================== \n");
+  printf(" the cavity is of size %d \n", sizeof_cavity);
+  for(int i=0; i<sizeof_cavity; i++){printf(" %d ", cavity[i]);}
+  printf("\n");
+  printf(" the boundary is of size %d \n", sizeof_boundary);
+  for(int i=0; i<sizeof_boundary; i++){printf(" %d ", boundary_cavity[i]);}
+  printf("\n");
+  
+  printf(" \n ======================= \n \n");
+  printf(" cavity made \n");
+  printf(" filling the cavity \n");
 
   // Filling the cavity with the star centered on P
   
+  printf(" reallocating the memory \n");
   // ===========================================================================
   // realloc the memory
-  // NbrTri & Tri & TriVoi & TriRef 
-  Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary - sizeof_cavity;
-  Msh->NbrTri = Msh->NbrTri + sizeof_boundary - sizeof_cavity;
+  // NbrTri & Tri & TriVoi & TriRef & Crd
+  Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary;
+  Msh->NbrTri = Msh->NbrTri - sizeof_cavity;
 
-  int3d* temp_Tri = realloc(Msh->Tri, Msh->NbrTriMax*sizeof(int3d));
+  printf(" there will be at most %d triangles at the end \n", Msh->NbrTriMax);
+
+  printf("allocating memory for Tri \n");
+  int3d* temp_Tri = realloc(Msh->Tri, (Msh->NbrTriMax+1)*sizeof(int3d));
   if (temp_Tri == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
@@ -934,7 +987,8 @@ int ajout_point(Mesh* Msh, double2d Point)
   } 
   
   
-  int1d* temp_Ref = realloc(Msh->TriRef, Msh->NbrTriMax*sizeof(int1d));
+  printf("allocating memory for TriRef \n");
+  int1d* temp_Ref = realloc(Msh->TriRef, (Msh->NbrTriMax+1)*sizeof(int1d));
   if (temp_Ref == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
@@ -946,7 +1000,8 @@ int ajout_point(Mesh* Msh, double2d Point)
     temp_Ref= NULL;
   } 
 
-  int3d* temp_Voi = realloc(Msh->TriVoi, Msh->NbrTriMax*sizeof(int3d));
+  printf("allocating memory for TriVoi \n");
+  int3d* temp_Voi = realloc(Msh->TriVoi, (Msh->NbrTriMax+1)*sizeof(int3d));
   if (temp_Voi == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
@@ -960,7 +1015,8 @@ int ajout_point(Mesh* Msh, double2d Point)
 
   Msh->NbrVer +=1; Msh->NbrVerMax +=1;
   
-  double2d* temp_crd = realloc(Msh->Crd, Msh->NbrVerMax*sizeof(double2d));
+  printf("allocating memory for Crd \n");
+  double2d* temp_crd = realloc(Msh->Crd , (Msh->NbrVerMax+1)*sizeof(double3d));
   if (temp_crd == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
@@ -975,32 +1031,63 @@ int ajout_point(Mesh* Msh, double2d Point)
     } 
 
 
+  printf("allocating memory for LstObj \n");
+  int5d* temp_Lst =  realloc(Msh->Hsh->LstObj , (Msh->NbrVerMax + Msh->NbrVerMax)*sizeof(int5d)); 
+  if (temp_Lst == NULL) {
+    // If reallocation fails
+    printf("ERROR. Unable to resize memory");
+  } else {
+    // If reallocation is successful
+    Msh->Hsh->LstObj = temp_Lst;  // Update ptr1 to point to the newly allocated memory
+    
+    free(temp_Lst); 
+    temp_Lst= NULL;
+  } 
   // ===========================================================================
 
+  printf(" allocated the memory \n");
+  int Bound_index, Tri_added;
   for(int i_boundary=0; i_boundary<sizeof_boundary; i_boundary++)
-  {  
+  { 
+    while( boundary_cavity[i_boundary] == 0 && i_boundary<sizeof_boundary){printf("boundary : \n "); i_boundary +=1;}
+    if(i_boundary == sizeof_boundary) break;
+
+    // printf(" test : %d \n", cavity[sizeof_cavity-1]);
+    if(sizeof_cavity>0){   Tri_added = cavity[sizeof_cavity-1];}
+    else{ Tri_added = Msh->NbrTri;}
+
+    Bound_index = boundary_cavity[i_boundary];
+
+    printf(" adding tri : %d \n",Tri_added);
+    
     // add to Tri
-    iVer1 = Msh->Hsh->LstObj[boundary_cavity[i_boundary]][0]; 
-    iVer2 = Msh->Hsh->LstObj[boundary_cavity[i_boundary]][1]; 
+    iVer1 = Msh->Hsh->LstObj[Bound_index][0]; 
+    iVer2 = Msh->Hsh->LstObj[Bound_index][1]; 
+    printf(" triangle linked to the boundary : %d (%d,%d) \n", Bound_index, iVer1,iVer2 );
     
     if(surf(Msh->Crd[iVer1],Msh->Crd[iVer2],Point)<0)
     {
-    Msh->Tri[cavity[sizeof_cavity]][0]= iVer2;
-    Msh->Tri[cavity[sizeof_cavity]][1]= iVer1;
-    Msh->Tri[cavity[sizeof_cavity]][2]= Msh->NbrVer;
+    Msh->Tri[Tri_added][0]= iVer2;
+    Msh->Tri[Tri_added][1]= iVer1;
+    Msh->Tri[Tri_added][2]= Msh->NbrVer;
     }
     else
     {      
-      Msh->Tri[cavity[sizeof_cavity]][0]= iVer1;
-      Msh->Tri[cavity[sizeof_cavity]][1]= iVer2;
-      Msh->Tri[cavity[sizeof_cavity]][2]= Msh->NbrVer;
+      Msh->Tri[Tri_added][0]= iVer1;
+      Msh->Tri[Tri_added][1]= iVer2;
+      Msh->Tri[Tri_added][2]= Msh->NbrVer;
     }
     
+    printf(" added to the Mesh to add to the HashTable \n");
     // update the hashtable
-    hash_add(Msh->Hsh,iVer1,Msh->NbrVer,cavity[sizeof_cavity],boundary_cavity[i_boundary]);
-    hash_add(Msh->Hsh,iVer2,Msh->NbrVer,cavity[sizeof_cavity],boundary_cavity[i_boundary]);
-    
+    hash_add(Msh->Hsh,iVer1,Msh->NbrVer,Tri_added,Bound_index);
+    hash_add(Msh->Hsh,iVer2,Msh->NbrVer,Tri_added,Bound_index);
+
+    sizeof_cavity -=1; Msh->NbrTri +=1;
   }
+
+  printf(" POINT ADDED !! \n");
+
   return 0;
 }
 
