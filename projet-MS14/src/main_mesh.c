@@ -78,10 +78,10 @@ int main(int argc, char* argv[])
   //=================================         TP2        ===========================================
   //================================================================================================
 
-  hash_out(Msh->Hsh);
+  // hash_out(Msh->Hsh);
   double2d P = {0.5,0.6};
   ajout_point(Msh,P);
-  hash_out(Msh->Hsh);
+  // hash_out(Msh->Hsh);
 
   msh_write(Msh,"ModifiedMesh.mesh");
 
