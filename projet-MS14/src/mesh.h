@@ -120,3 +120,4 @@ double* connex_comp(Mesh* Msh);
 double quality(double2d P1, double2d P2, double2d P3);
 double surf(double2d P1, double2d P2, double2d P3);
 int ajout_point(Mesh* Msh, double2d Point);
+int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3);

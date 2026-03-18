@@ -2,7 +2,7 @@
 
 int main(int argc, char* argv[])
 {
-  int    iTri, iVer;
+  // int    iTri, iVer;
   double to, ti;
 
   if (argc < 2) {
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 
   //--- read a mesh
   to        = clock();
-  Mesh* Msh = msh_read(argv[1], 1);
+  Mesh* Msh = msh_read(argv[1], 0);
   ti        = clock();
 
   // Mesh* Msh_Q = msh_read(argv[1], 1);
@@ -24,19 +24,19 @@ int main(int argc, char* argv[])
   printf("  Triangles  %10d \n", Msh->NbrTri);
   printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
-  //--- create neigbhors Q2 version
+  // //--- create neigbhors Q2 version
+  // // to = clock();
+  // // msh_neighborsQ2(Msh_Q);
+  // // ti = clock();
+
+  // printf("  time q2 neigh.        %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+
+  // //--- create neigbhors with hash table
   // to = clock();
-  // msh_neighborsQ2(Msh_Q);
+  // msh_neighbors(Msh);
   // ti = clock();
 
-  printf("  time q2 neigh.        %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
-
-  //--- create neigbhors with hash table
-  to = clock();
-  msh_neighbors(Msh);
-  ti = clock();
-
-  printf("  time hash tab neigh.  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+  // printf("  time hash tab neigh.  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   // --- check solution
   // for(int tri_k=0;tri_k<Msh->NbrTri+1; tri_k++)
@@ -54,36 +54,52 @@ int main(int argc, char* argv[])
   // }
 
 
-  printf("Quality evaluation :\n");
-  to = clock();
-  double* Qal = (double*)malloc(sizeof(double) * (Msh->NbrTri + 1));
+  // printf("Quality evaluation :\n");
+  // to = clock();
+  // double* Qal = (double*)malloc(sizeof(double) * (Msh->NbrTri + 1));
 
-  int i1,i2,i3;
+  // int i1,i2,i3;
 
-  for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
-  // printf("calc %d \n",iTri);
-  i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
-  double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
-  double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
-  double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
-  Qal[iTri] = quality(P1,P2,P3);
-  }
+  // for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
+  // // printf("calc %d \n",iTri);
+  // i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
+  // double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
+  // double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
+  // double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
+  // Qal[iTri] = quality(P1,P2,P3);
+  // }
 
-  msh_write2dfield_Triangles("quality.sol", Msh->NbrTri, Qal);
-  ti = clock();
-  printf("quality evaluated in  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+  // msh_write2dfield_Triangles("quality.sol", Msh->NbrTri, Qal);
+  // ti = clock();
+  // printf("quality evaluated in  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   
   //================================================================================================
   //=================================         TP2        ===========================================
   //================================================================================================
 
-  hash_out(Msh->Hsh);
-  double2d P = {0.5,0.6};
-  ajout_point(Msh,P);
-  hash_out(Msh->Hsh);
+  //--- create neigbhors with hash table
+  to = clock();
+  msh_neighbors(Msh);
+  ti = clock();
 
-  msh_write(Msh,"ModifiedMesh.mesh");
+  // msh_write(Msh,"TEST.mesh");
+  // hash_out(Msh->Hsh);
+  double2d P = {1,0};  
+  // ajout_point(Msh,P1);
+
+  // double2d P2 = {0.55,0.6};  ajout_point(Msh,P2);
+  // hash_out(Msh->Hsh);
+  // double2d P3 = {0.57,0.6};  ajout_point(Msh,P3);
+  // double2d P4 = {0.6,0.5};  ajout_point(Msh,P4);
+  // hash_out(Msh->Hsh);
+  double2d P1 = {1, 0};
+  double2d P2 = {0.5,0};
+  double2d P3 = {0.75,0.25};
+
+  Is_Inside_Circle(P,P1,P2,P3);
+
+  // msh_write(Msh,"ModifiedMesh.mesh");
 
 
 
@@ -104,25 +120,25 @@ int main(int argc, char* argv[])
   // msh_write2dfield_Triangles("color.sol", Msh->NbrTri, color);
 
   //--- TODO: compute metric field
-  double3d* Met = (double3d*)malloc(sizeof(double3d) * (Msh->NbrVer + 1));
+  // double3d* Met = (double3d*)malloc(sizeof(double3d) * (Msh->NbrVer + 1));
 
-  for (iVer = 1; iVer <= Msh->NbrVer; iVer++) {
-    Met[iVer][0] = 1.;
-    Met[iVer][1] = 0.;
-    Met[iVer][2] = 1.;
-  }
+  // for (iVer = 1; iVer <= Msh->NbrVer; iVer++) {
+  //   Met[iVer][0] = 1.;
+  //   Met[iVer][1] = 0.;
+  //   Met[iVer][2] = 1.;
+  // }
 
-  msh_write2dmetric("metric.sol", Msh->NbrVer, Met);
+  // msh_write2dmetric("metric.sol", Msh->NbrVer, Met);
 
-  //--- Free memory
-  if (Qal != NULL) {
-    free(Qal);
-    Qal = NULL;
-  }
-  if (Met != NULL) {
-    free(Met);
-    Met = NULL;
-  }
+  // //--- Free memory
+  // if (Qal != NULL) {
+  //   free(Qal);
+  //   Qal = NULL;
+  // }
+  // if (Met != NULL) {
+  //   free(Met);
+  //   Met = NULL;
+  // }
   // if (color !=NULL){
   //   free(color);
   //   color = NULL;
