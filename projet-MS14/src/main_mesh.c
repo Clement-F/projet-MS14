@@ -83,23 +83,23 @@ int main(int argc, char* argv[])
   msh_neighbors(Msh);
   ti = clock();
 
-  // msh_write(Msh,"TEST.mesh");
+  msh_write(Msh,"TEST.mesh");
   // hash_out(Msh->Hsh);
-  double2d P = {1,0};  
-  // ajout_point(Msh,P1);
+  double2d P1 = {0.5,0.6};  ajout_point(Msh,P1);
 
-  // double2d P2 = {0.55,0.6};  ajout_point(Msh,P2);
+  // for(int i=0;i<Msh->NbrTri;i++){ for(int j=0;j<3;j++){ printf(" %d",Msh->TriVoi[i][j]);} printf("\n");}
+  // printf("\n");
+
+  double2d P2 = {0.55,0.6};  ajout_point(Msh,P2);
   // hash_out(Msh->Hsh);
   // double2d P3 = {0.57,0.6};  ajout_point(Msh,P3);
   // double2d P4 = {0.6,0.5};  ajout_point(Msh,P4);
-  // hash_out(Msh->Hsh);
-  double2d P1 = {1, 0};
-  double2d P2 = {0.5,0};
-  double2d P3 = {0.75,0.25};
+  hash_out(Msh->Hsh);
+  printf(" number of edge : %d / %d", Msh->Hsh->NbrObj, Msh->Hsh->NbrMaxObj);
 
-  Is_Inside_Circle(P,P1,P2,P3);
+  
 
-  // msh_write(Msh,"ModifiedMesh.mesh");
+  msh_write(Msh,"ModifiedMesh.mesh");
 
 
 
