@@ -78,29 +78,34 @@ int main(int argc, char* argv[])
   //=================================         TP2        ===========================================
   //================================================================================================
 
-  //--- create neigbhors with hash table
+  // --- create neigbhors with hash table
   to = clock();
   msh_neighbors(Msh);
   ti = clock();
 
-  msh_write(Msh,"TEST.mesh");
+  // msh_write(Msh,"TEST.mesh");
   // hash_out(Msh->Hsh);
   double2d P1 = {0.6,0.6};  ajout_point(Msh,P1);
+  printf("\n data : tri %d/%d, Ver %d/%d \n", Msh->NbrTri, Msh->NbrTriMax, Msh->NbrVer, Msh->NbrVerMax);
 
   // for(int i=0;i<Msh->NbrTri;i++){ for(int j=0;j<3;j++){ printf(" %d",Msh->TriVoi[i][j]);} printf("\n");}
   // printf("\n");
 
-  double2d P2 = {0.55,0.6};  ajout_point(Msh,P2);
+  // double2d P2 = {0.55,0.6};  ajout_point(Msh,P2);
+  // printf("\n data : tri %d/%d, Ver %d/%d \n", Msh->NbrTri, Msh->NbrTriMax, Msh->NbrVer, Msh->NbrVerMax);
   // hash_out(Msh->Hsh);
-  double2d P3 = {0.57,0.6};  ajout_point(Msh,P3);
-  double2d P4 = {0.6,0.5};  ajout_point(Msh,P4);
-  hash_out(Msh->Hsh);
-  printf(" number of edge : %d / %d", Msh->Hsh->NbrObj, Msh->Hsh->NbrMaxObj);
+  // double2d P3 = {0.57,0.6};  ajout_point(Msh,P3);
+  // printf("\n data : tri %d/%d, Ver %d/%d \n", Msh->NbrTri, Msh->NbrTriMax, Msh->NbrVer, Msh->NbrVerMax);
+  // double2d P4 = {0.6,0.5};  ajout_point(Msh,P4);
+  // hash_out(Msh->Hsh);
+  // printf(" number of edge : %d / %d", Msh->Hsh->NbrObj, Msh->Hsh->NbrMaxObj);
 
   
 
   msh_write(Msh,"ModifiedMesh.mesh");
 
+
+  // Maillage_Delauney(1);
 
 
 
