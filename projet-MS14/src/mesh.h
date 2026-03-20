@@ -124,3 +124,4 @@ int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3);
 int hash_out_index(HashTable* hsh, int index);  // print the element of the table
 
 int Maillage_Delauney(int Nb_Point);
+int Mesh_out(Mesh* Msh);

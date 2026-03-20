@@ -209,6 +209,7 @@ int GmfOpenMesh(char* FilNam, int mod, ...)
 
     GmfIniFlg = 1;
   }
+  printf(" 1");
 
   /*---------------------*/
   /* MESH STRUCTURE INIT */
@@ -219,18 +220,22 @@ int GmfOpenMesh(char* FilNam, int mod, ...)
       MshIdx = i;
       break;
     }
+  printf(" 2");
 
   if (!MshIdx || !(msh = calloc(1, sizeof(GmfMshSct))))
     return (0);
 
+  printf(" 3");
   /* Save the current stack environment for longjmp */
 
   if (setjmp(GmfEnv) != 0) {
+    printf(" 20");
     if (msh->hdl != NULL)
       fclose(msh->hdl);
     free(msh);
     return (0);
   }
+  printf(" 4");
 
   /* Copy the FilNam into the structure */
 
@@ -239,6 +244,7 @@ int GmfOpenMesh(char* FilNam, int mod, ...)
 
   strcpy(msh->FilNam, FilNam);
 
+  printf(" 5");
   /* Store the opening mod (read or write) and guess the filetype (binary or ascii) depending on the extension */
 
   msh->mod    = mod;
@@ -256,6 +262,8 @@ int GmfOpenMesh(char* FilNam, int mod, ...)
     msh->typ |= (Asc | SolFil);
   else
     longjmp(GmfEnv, -1);
+    
+  printf(" 6");
 
   /* Open the file in the required mod and initialyse the mesh structure */
 
@@ -269,11 +277,13 @@ int GmfOpenMesh(char* FilNam, int mod, ...)
     PtrVer = va_arg(VarArg, int*);
     PtrDim = va_arg(VarArg, int*);
     va_end(VarArg);
+  printf(" 7");
 
     /* Create the name string and open the file */
 
     if (!(msh->hdl = fopen(msh->FilNam, "rb")))
       longjmp(GmfEnv, -1);
+  printf(" 8");
 
     /* Read the endian coding tag, the mesh version and the mesh dimension (mandatory kwd) */
 
@@ -323,6 +333,7 @@ int GmfOpenMesh(char* FilNam, int mod, ...)
       safe_fscanf(msh->hdl, "%d", &msh->dim);
     }
 
+  printf(" 9");
     if ((msh->dim != 2) && (msh->dim != 3))
       longjmp(GmfEnv, -1);
 
@@ -343,7 +354,7 @@ int GmfOpenMesh(char* FilNam, int mod, ...)
     return (MshIdx);
   }
   else if (msh->mod == GmfWrite) {
-
+    printf(" 10");
     /*-----------------------*/
     /* OPEN FILE FOR WRITING */
     /*-----------------------*/
@@ -368,8 +379,11 @@ int GmfOpenMesh(char* FilNam, int mod, ...)
 
     /* Create the mesh file */
 
-    if (!(msh->hdl = fopen(msh->FilNam, "wb")))
-      longjmp(GmfEnv, -1);
+    printf(" 11");
+    if (!(msh->hdl = fopen(msh->FilNam, "wb"))){
+      printf(" 19");
+      longjmp(GmfEnv, -1);}
+    printf(" 18");
 
     GmfMshTab[MshIdx] = msh;
 
@@ -378,21 +392,25 @@ int GmfOpenMesh(char* FilNam, int mod, ...)
     /*------------*/
 
     /* Write the mesh version and dimension */
-
+    printf(" 14");
     if (msh->typ & Asc) {
+      printf(" 15");
       fprintf(msh->hdl, "%s %d\n\n", GmfKwdFmt[GmfVersionFormatted][0], msh->ver);
       fprintf(msh->hdl, "%s %d\n", GmfKwdFmt[GmfDimension][0], msh->dim);
     }
     else {
+      printf(" 16");
       RecWrd(msh, (unsigned char*)&msh->cod);
       RecWrd(msh, (unsigned char*)&msh->ver);
       GmfSetKwd(MshIdx, GmfDimension, 0);
       RecWrd(msh, (unsigned char*)&msh->dim);
     }
+    printf(" 12");
 
     return (MshIdx);
   }
   else {
+  printf(" 13");
     free(msh);
     return (0);
   }

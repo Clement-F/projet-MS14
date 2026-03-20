@@ -85,8 +85,10 @@ int main(int argc, char* argv[])
 
   // msh_write(Msh,"TEST.mesh");
   // hash_out(Msh->Hsh);
-  double2d P1 = {0.6,0.6};  ajout_point(Msh,P1);
-  printf("\n data : tri %d/%d, Ver %d/%d \n", Msh->NbrTri, Msh->NbrTriMax, Msh->NbrVer, Msh->NbrVerMax);
+  // double2d P1 = {0.6,0.6};  ajout_point(Msh,P1);
+  Mesh_out(Msh);
+  printf("\n data : tri %d/%d,  Ver %d/%d \n", Msh->NbrTri, Msh->NbrTriMax, Msh->NbrVer, Msh->NbrVerMax);
+
 
   // for(int i=0;i<Msh->NbrTri;i++){ for(int j=0;j<3;j++){ printf(" %d",Msh->TriVoi[i][j]);} printf("\n");}
   // printf("\n");
@@ -102,7 +104,7 @@ int main(int argc, char* argv[])
 
   
 
-  msh_write(Msh,"ModifiedMesh.mesh");
+  msh_write(Msh,"M.mesh");
 
 
   // Maillage_Delauney(1);

@@ -794,6 +794,29 @@ double quality(double2d P1, double2d P2, double2d P3)
   return Qal;
 }
 
+
+int Mesh_out(Mesh* Msh)
+{
+  printf("The mesh is of dimension %d", Msh->Dim);
+
+
+  printf("");
+  printf("The mesh is in a box of x: (%f,%f) y:(%f,%f)", Msh->Box[0],Msh->Box[1],Msh->Box[2],Msh->Box[3]);
+
+
+
+  printf("The mesh is made out of \n");
+  printf("Vertexes : \n");
+  for(int i=0;i<=Msh->NbrVerMax;i++) printf(" ---------- \n Vert : %d, (%f,%f) \n ", i,Msh->Crd[i][0], Msh->Crd[i][1]);
+  printf(" \n ============== \n");
+  printf("Triangles : \n");
+  for(int i=0;i<=Msh->NbrTriMax;i++) printf(" ---------- \n Tri : %d,  (%d,%d,%d), ref : %d \n", i, Msh->Tri[i][0], Msh->Tri[i][1], Msh->Tri[i][2],Msh->TriRef[i]);
+  printf(" \n ============== \n");
+
+  return 0;
+
+}
+
 // ============================================================================
 // ============================================================================
 
@@ -1093,13 +1116,16 @@ int ajout_point(Mesh* Msh, double2d Point)
   // ===========================================================================
   // realloc the memory
   // NbrTri & Tri & TriVoi & TriRef & Crd
+
+  int memory_security =2;
+
   Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary - sizeof_cavity;
   Msh->NbrTri = Msh->NbrTri - sizeof_cavity;
 
   printf(" there will be at most %d triangles at the end \n", Msh->NbrTriMax);
 
   printf("allocating memory for Tri \n");
-  int3d* temp_Tri = realloc(Msh->Tri, (Msh->NbrTriMax+1  )*sizeof(int3d));
+  int3d* temp_Tri = realloc(Msh->Tri, (Msh->NbrTriMax+1 +memory_security )*sizeof(int3d));
   if (temp_Tri == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
@@ -1112,7 +1138,7 @@ int ajout_point(Mesh* Msh, double2d Point)
   
   
   printf("allocating memory for TriRef \n");
-  int1d* temp_Ref = realloc(Msh->TriRef, (Msh->NbrTriMax+1 )*sizeof(int1d));
+  int1d* temp_Ref = realloc(Msh->TriRef, (Msh->NbrTriMax+1 +memory_security)*sizeof(int1d));
   if (temp_Ref == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
@@ -1124,7 +1150,7 @@ int ajout_point(Mesh* Msh, double2d Point)
   } 
 
   printf("allocating memory for TriVoi \n");
-  int3d* temp_Voi = realloc(Msh->TriVoi, (Msh->NbrTriMax+1 )*sizeof(int3d));
+  int3d* temp_Voi = realloc(Msh->TriVoi, (Msh->NbrTriMax+1 +memory_security)*sizeof(int3d));
   if (temp_Voi == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
@@ -1139,7 +1165,7 @@ int ajout_point(Mesh* Msh, double2d Point)
   Msh->NbrVer +=1; Msh->NbrVerMax +=1;
   
   printf("allocating memory for Crd \n");
-  double2d* temp_crd = realloc(Msh->Crd , (Msh->NbrVerMax+1 )*sizeof(double3d));
+  double2d* temp_crd = realloc(Msh->Crd , (Msh->NbrVerMax+1 +memory_security)*sizeof(double3d));
   if (temp_crd == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
@@ -1157,7 +1183,7 @@ int ajout_point(Mesh* Msh, double2d Point)
   Msh->Hsh->NbrMaxObj += (1+(sizeof_boundary-sizeof_cavity)) ; 
 
   printf("allocating memory for LstObj \n");
-  int5d* temp_Lst =  realloc(Msh->Hsh->LstObj , (Msh->Hsh->NbrMaxObj )*sizeof(int5d)); 
+  int5d* temp_Lst =  realloc(Msh->Hsh->LstObj , (Msh->Hsh->NbrMaxObj +memory_security)*sizeof(int5d)); 
   if (temp_Lst == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
@@ -1172,15 +1198,20 @@ int ajout_point(Mesh* Msh, double2d Point)
   } 
   
   printf("allocating memory for Head \n");
-  int* temp_Hd =  realloc(Msh->Hsh->Head ,  2*(Msh->NbrVerMax )*sizeof(int)); 
+
+  printf(" sl : %d ",Msh->Hsh->Head[1]);
+
+  int* temp_Hd =  realloc(Msh->Hsh->Head ,  2*(Msh->NbrVerMax ) *sizeof(int)); 
+  printf(" c ");
   if (temp_Hd == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
   } else {
     // If reallocation is successful
     Msh->Hsh->Head = temp_Hd;  // Update ptr1 to point to the newly allocated memory
+    printf(" b ");
     for(int j=Msh->Hsh->SizHead + 1;    j<2*(Msh->NbrVerMax );   j++){Msh->Hsh->Head[j]=0;}
-
+    printf(" a ");
     Msh->Hsh->SizHead = 2*(Msh->NbrVerMax);
     // free(temp_Hd); 
     // temp_Hd= NULL;
