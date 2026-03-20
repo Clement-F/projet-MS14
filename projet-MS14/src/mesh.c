@@ -1246,5 +1246,36 @@ int ajout_point(Mesh* Msh, double2d Point)
 }
 
 
+
+int Maillage_Delauney(int Nb_Point)
+{
+  srand(10);
+  //--- read a mesh
+  Mesh* Msh = msh_read("../data/carre_base.mesh", 0);
+
+  double Crd_x,Crd_y;
+
+  msh_neighbors(Msh);
+  hash_out(Msh->Hsh);
+
+  for(int it=0;it<Nb_Point;it++)
+  {
+    Crd_x=(double)(rand())/RAND_MAX;
+    while(Crd_x<1e-2 || Crd_x>1-1e-2) Crd_x=(double)(rand())/RAND_MAX;
+    Crd_y=(double)(rand())/RAND_MAX;
+    while(Crd_y<1e-2 || Crd_y>1-1e-2) Crd_y=(double)(rand())/RAND_MAX;
+
+    ajout_point(Msh, (double2d){Crd_x,Crd_y} );
+    hash_out(Msh->Hsh);
+  }
+
+  printf("\n data : tri %d/%d, Ver %d/%d \n", Msh->NbrTri, Msh->NbrTriMax, Msh->NbrVer, Msh->NbrVerMax);
+
+
+  printf(" \n outing the mesh \n");
+  msh_write(Msh,"TEST.mesh");
+  return 0;
+}
+
 // ============================================================================
 // ============================================================================
