@@ -93,7 +93,9 @@ int main(int argc, char* argv[])
   double2d P2 = {0.55,0.6};  ajout_point(Msh,P2);
   // hash_out(Msh->Hsh);
   double2d P3 = {0.57,0.6};  ajout_point(Msh,P3);
-  double2d P4 = {0.6,0.5};  ajout_point(Msh,P4);
+  double2d P4 = {0.4,0.4};  ajout_point(Msh,P4);
+  ajout_point(Msh, (double2d){0.4,0.3} );
+  ajout_point(Msh, (double2d){0.3,0.4} );
   hash_out(Msh->Hsh);
   printf(" number of edge : %d / %d", Msh->Hsh->NbrObj, Msh->Hsh->NbrMaxObj);
 
