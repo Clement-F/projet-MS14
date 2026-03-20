@@ -845,17 +845,9 @@ int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3)
     return d11*d22*d33 + d12*d23*d31 + d13*d21*d32 - d13*d22*d31 - d23*d32*d11 - d33*d12*d21 > 0.0;
 }
 
-
-int ajout_point(Mesh* Msh, double2d Point)
+int* Localise_Tri(Mesh* Msh, double2d Point)
 {
-  //TODO
-  // add the case -> on line
-  // add the case -> on vertex
 
-  // localisation of the point in the Mesh
-  printf(" \n ======================= \n \n");
-  printf(" INIT the method \n");
-  printf(" ADDING POINT P : (%f, %f) to the mesh \n", Point[0], Point[1]);
   int in_trig = 0; // 0 if in the triangle, 1 if it is. 
   int on_edge = 0; // 0 if not on edge, 1 if it is.
   int compass; // check if the north( direction ) has been chosen
@@ -896,7 +888,20 @@ int ajout_point(Mesh* Msh, double2d Point)
     // printf(" ---------------- \n");
   }
 
-    
+  int* Result = (int*)calloc(4,sizeof(int));
+  Result[0]= iTri; Result[1] = edge_Tri; Result[2]=in_trig; Result[3]=on_edge;
+
+  return Result;
+
+} 
+
+int* digging_a_hole(Mesh* Msh, double2d Point) //diggy diggy hole
+{
+
+  int iTri,edge_Tri,in_trig,on_edge;
+  int* Result= Localise_Tri(Msh, Point);
+  iTri = Result[0]; edge_Tri = Result[1]; in_trig = Result[2]; on_edge = Result[3];
+
   printf(" \n ======================= \n \n");
   if(in_trig)  printf(" Point localised in Triangle : %d \n", iTri);
   if(on_edge)  printf(" Point localised on edge between %d and %d \n", iTri, edge_Tri);
@@ -905,6 +910,7 @@ int ajout_point(Mesh* Msh, double2d Point)
   int id_tri = iTri;
 
   // calculting the elements to add to the cavity
+  int i1,i2,i3;
   int* pile   = calloc(Msh->NbrTri +1, sizeof(int));  // pile of element to add to the mavity field 
   int* cavity = calloc(Msh->NbrTri +1, sizeof(int));  // elements to remove
   int  sizeof_pile = 1;                               // size of the pile / index of the top of the pile
@@ -958,23 +964,21 @@ int ajout_point(Mesh* Msh, double2d Point)
       
     }
   }
+  return cavity;
+}
 
-
-  printf(" \n ======================= \n \n");
-  // hash_out(Msh->Hsh);
-
-  printf(" \n ======================= \n \n");
-  printf(" cavity search done \n");
-  printf(" we will be deleting %d elements \n", sizeof_cavity);
-  printf(" we will delete the elements : \n");
-  for(int i=0; i<sizeof_cavity;i++){ printf(" Tri %d : (%d,%d,%d) \n", cavity[i], Msh->Tri[cavity[i]][0], Msh->Tri[cavity[i]][1], Msh->Tri[cavity[i]][2] );}
-
+int2d* boundary_hole(Mesh* Msh, int* cavity)
+{
+  
   // deleting the elements of the cavity
   int Tri_neigh,i_obj,iVer1,iVer2;
 
   int sizeof_boundary=0;
   int2d* boundary_cavity; 
   boundary_cavity = calloc(2*(Msh->NbrVer) +1 , sizeof(int2d));
+
+  int sizeof_cavity=0;
+  for(int i=0;i<Msh->NbrTri;i++) if(cavity[i]!=NULL) sizeof_cavity+=1;
 
   for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
   {
@@ -1008,6 +1012,9 @@ int ajout_point(Mesh* Msh, double2d Point)
   } 
   printf(" \n ====================================== \n");
   printf(" creating the boundary of the cavity \n");
+
+  int Is_In_Cavity=0;
+
   for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
   {
     printf("    checking element : %d \n", cavity[i_cavity]);
@@ -1072,16 +1079,12 @@ int ajout_point(Mesh* Msh, double2d Point)
   
   printf(" \n ======================= \n \n");
   printf(" cavity made \n");
+  return boundary_cavity;
+}
 
-
-  printf(" \n ======================= \n \n");
-
-  // Filling the cavity with the star centered on P
+int memory_allocation(Mesh* Msh, int sizeof_boundary, int sizeof_cavity)
+{
   
-  printf(" reallocating the memory \n");
-  // ===========================================================================
-  // realloc the memory
-  // NbrTri & Tri & TriVoi & TriRef & Crd
   Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary;
   Msh->NbrTri = Msh->NbrTri - sizeof_cavity;
 
@@ -1135,8 +1138,6 @@ int ajout_point(Mesh* Msh, double2d Point)
   } else {
     // If reallocation is successful
     Msh->Crd = temp_crd;  // Update ptr1 to point to the newly allocated memory
-    Msh->Crd[Msh->NbrVer][0] = Point[0];
-    Msh->Crd[Msh->NbrVer][1] = Point[1];
     
     // free(temp_crd); 
     // temp_crd= NULL;
@@ -1174,12 +1175,27 @@ int ajout_point(Mesh* Msh, double2d Point)
   } 
   // ===========================================================================
 
-  printf(" allocated the memory \n");
+  return 0;
+}
+
+
+int Starring_Point(Mesh* Msh, int* cavity, int2d* boundary, double2d Point)
+{
   int Tri_added;
   int j_hsh,jVer1,jVer2;
+  int iVer1,iVer2,jTri;
+
+  
+  int sizeof_boundary=0;
+  for(int i=0;i<Msh->NbrTri;i++) if(boundary[i]!=NULL) sizeof_boundary+=1;
+
+  
+  int sizeof_cavity=0;
+  for(int i=0;i<Msh->NbrTri;i++) if(cavity[i]!=NULL) sizeof_cavity+=1;
+
   for(int i_boundary=0; i_boundary<sizeof_boundary; i_boundary++)
   { 
-    while( (boundary_cavity[i_boundary][0]==0 && boundary_cavity[i_boundary][1]==0) && i_boundary<sizeof_boundary){printf("boundary : %d \n ", i_boundary); i_boundary +=1;}
+    while( (boundary[i_boundary][0]==0 && boundary[i_boundary][1]==0) && i_boundary<sizeof_boundary){printf("boundary : %d \n ", i_boundary); i_boundary +=1;}
     // if(i_boundary == sizeof_boundary) break;
 
     // printf(" test : %d \n", cavity[sizeof_cavity-1]);
@@ -1189,8 +1205,8 @@ int ajout_point(Mesh* Msh, double2d Point)
     printf(" adding tri : %d \n",Tri_added);
     
     // add to Tri
-    iVer1 = boundary_cavity[i_boundary][0]; 
-    iVer2 = boundary_cavity[i_boundary][1]; 
+    iVer1 = boundary[i_boundary][0]; 
+    iVer2 = boundary[i_boundary][1]; 
     printf(" triangle linked to the boundary : (%d,%d) \n", iVer1,iVer2 );
     
     if(surf(Msh->Crd[iVer1],Msh->Crd[iVer2],Point)<0)
@@ -1240,12 +1256,50 @@ int ajout_point(Mesh* Msh, double2d Point)
     sizeof_cavity -=1; Msh->NbrTri +=1;
   }
 
-  printf(" POINT ADDED !! \n Point (%f,%f) will be named as %d thereafter. \n", Point[0],Point[1],Msh->NbrVer);
-
   return 0;
 }
 
 
+int ajout_point(Mesh* Msh, double2d Point)
+{
+  //TODO
+  // add the case -> on line
+  // add the case -> on vertex
+
+  // localisation of the point in the Mesh
+  printf(" \n ======================= \n \n");
+  printf(" INIT the method \n");
+  printf(" ADDING POINT P : (%f, %f) to the mesh \n", Point[0], Point[1]);
+
+  int* cavity = digging_a_hole(Msh,Point);
+
+  int2d* boundary = boundary_hole(Msh, cavity);
+
+  int sizeof_cavity=0;
+  for(int i=0;i<Msh->NbrTri;i++) if(cavity[i]!=NULL) sizeof_cavity+=1;
+  int sizeof_boundary=0;
+  for(int i=0;i<Msh->NbrTri;i++) if(boundary[i]!=NULL) sizeof_boundary+=1;
+
+  printf(" \n ======================= \n \n");
+
+  // Filling the cavity with the star centered on P
+  
+  printf(" reallocating the memory \n");
+
+  memory_allocation(Msh,sizeof_boundary, sizeof_cavity);
+  
+  Msh->Crd[Msh->NbrVer][0] = Point[0];
+  Msh->Crd[Msh->NbrVer][1] = Point[1];
+
+  printf(" allocated the memory \n");
+
+  Starring_Point(Msh,cavity,boundary,Point);
+
+
+  printf(" POINT ADDED !! \n Point (%f,%f) will be named as %d thereafter. \n", Point[0],Point[1],Msh->NbrVer);
+
+  return 0;
+}
 
 int Maillage_Delauney(int Nb_Point)
 {
@@ -1266,16 +1320,52 @@ int Maillage_Delauney(int Nb_Point)
     while(Crd_y<1e-2 || Crd_y>1-1e-2) Crd_y=(double)(rand())/RAND_MAX;
 
     ajout_point(Msh, (double2d){Crd_x,Crd_y} );
-    hash_out(Msh->Hsh);
   }
+  Mesh_out(Msh);
 
-  printf("\n data : tri %d/%d, Ver %d/%d \n", Msh->NbrTri, Msh->NbrTriMax, Msh->NbrVer, Msh->NbrVerMax);
-
-
-  printf(" \n outing the mesh \n");
-  msh_write(Msh,"TEST.mesh");
+  msh_write(Msh,"Delauney.mesh");
   return 0;
 }
+
+int Mesh_out(Mesh* Msh)
+{
+  printf("The mesh is of dimension %d", Msh->Dim);
+
+  printf("The mesh is in a box of x: (%f,%f) y:(%f,%f)", Msh->Box[0],Msh->Box[1],Msh->Box[2],Msh->Box[3]);
+
+
+
+  printf("The mesh is made out of \n");
+  printf("Vertexes : \n");
+  for(int i=0;i<=Msh->NbrVerMax;i++) printf(" ---------- \n Vert : %d, (%f,%f) \n ", i,Msh->Crd[i][0], Msh->Crd[i][1]);
+  printf(" \n ============== \n");
+  printf("Triangles : \n");
+  for(int i=0;i<=Msh->NbrTriMax;i++) printf(" ---------- \n Tri : %d,  (%d,%d,%d), ref : %d \n", i, Msh->Tri[i][0], Msh->Tri[i][1], Msh->Tri[i][2],Msh->TriRef[i]);
+  printf(" \n ============== \n");
+  
+
+  printf(" there are in total : %d Triangle and a maximum of %d \n", Msh->NbrTri, Msh->NbrTriMax);
+  printf(" there are in total : %d Vertex   and a maximum of %d \n", Msh->NbrVer  , Msh->NbrVerMax);
+  printf(" there are in total : %d Edges    and a maximum of %d \n", Msh->Hsh->NbrObj, Msh->Hsh->NbrMaxObj);
+
+  return 0;
+
+}
+
+int Sort_Mesh(Mesh* Msh)
+{
+  for(int iTri=0; iTri<Msh->NbrTriMax;iTri ++)
+  {
+    if(Msh->Tri[iTri][0] ==0 || (Msh->Tri[iTri][1] ==0 || Msh->Tri[iTri][2] ==0)) 
+    {
+
+    }
+  }
+
+  return 0;
+}
+
+
 
 // ============================================================================
 // ============================================================================

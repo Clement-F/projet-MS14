@@ -3,26 +3,26 @@
 int main(int argc, char* argv[])
 {
   // int    iTri, iVer;
-  double to, ti;
+  // double to, ti;
 
-  if (argc < 2) {
-    printf(" usage : mesh file \n");
-    return 0;
-  }
+  // if (argc < 2) {
+  //   printf(" usage : mesh file \n");
+  //   return 0;
+  // }
 
   //--- read a mesh
-  to        = clock();
-  Mesh* Msh = msh_read(argv[1], 0);
-  ti        = clock();
+  // to        = clock();
+  // Mesh* Msh = msh_read(argv[1], 0);
+  // ti        = clock();
 
   // Mesh* Msh_Q = msh_read(argv[1], 1);
 
-  if (!Msh)
-    return 0;
+  // if (!Msh)
+  //   return 0;
 
-  printf("  Vertices   %10d \n", Msh->NbrVer);
-  printf("  Triangles  %10d \n", Msh->NbrTri);
-  printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+  // printf("  Vertices   %10d \n", Msh->NbrVer);
+  // printf("  Triangles  %10d \n", Msh->NbrTri);
+  // printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   // //--- create neigbhors Q2 version
   // // to = clock();
@@ -79,29 +79,28 @@ int main(int argc, char* argv[])
   //================================================================================================
 
   //--- create neigbhors with hash table
-  to = clock();
-  msh_neighbors(Msh);
-  ti = clock();
+  // to = clock();
+  // msh_neighbors(Msh);
+  // ti = clock();
 
-  msh_write(Msh,"TEST.mesh");
-  // hash_out(Msh->Hsh);
-  double2d P1 = {0.6,0.6};  ajout_point(Msh,P1);
+  // msh_write(Msh,"TEST.mesh");
+  // // hash_out(Msh->Hsh);
+  // double2d P1 = {0.6,0.6};  ajout_point(Msh,P1);
 
   // for(int i=0;i<Msh->NbrTri;i++){ for(int j=0;j<3;j++){ printf(" %d",Msh->TriVoi[i][j]);} printf("\n");}
   // printf("\n");
 
-  double2d P2 = {0.55,0.6};  ajout_point(Msh,P2);
-  // hash_out(Msh->Hsh);
-  double2d P3 = {0.57,0.6};  ajout_point(Msh,P3);
-  double2d P4 = {0.4,0.4};  ajout_point(Msh,P4);
-  ajout_point(Msh, (double2d){0.4,0.3} );
-  ajout_point(Msh, (double2d){0.3,0.4} );
-  hash_out(Msh->Hsh);
-  printf(" number of edge : %d / %d", Msh->Hsh->NbrObj, Msh->Hsh->NbrMaxObj);
+  // double2d P2 = {0.55,0.6};  ajout_point(Msh,P2);
+  // // hash_out(Msh->Hsh);
+  // double2d P3 = {0.57,0.6};  ajout_point(Msh,P3);
+  // double2d P4 = {0.4,0.4};  ajout_point(Msh,P4);
+  // ajout_point(Msh, (double2d){0.4,0.3} );
+  // ajout_point(Msh, (double2d){0.3,0.4} );
+  // Mesh_out(Msh);
 
   
-
-  msh_write(Msh,"ModifiedMesh.mesh");
+  Maillage_Delauney(1);
+  // msh_write(Msh_D,"ModifiedMesh.mesh");
 
 
 
