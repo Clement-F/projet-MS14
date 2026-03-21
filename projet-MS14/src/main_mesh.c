@@ -77,37 +77,7 @@ int main(int argc, char* argv[])
   //================================================================================================
   //=================================         TP2        ===========================================
   //================================================================================================
-
-  //--- create neigbhors with hash table
-  // to = clock();
-  // msh_neighbors(Msh);
-  // ti = clock();
-
-  // msh_write(Msh,"TEST.mesh");
-  // // hash_out(Msh->Hsh);
-  // double2d P1 = {0.6,0.6};  ajout_point(Msh,P1);
-
-  // for(int i=0;i<Msh->NbrTri;i++){ for(int j=0;j<3;j++){ printf(" %d",Msh->TriVoi[i][j]);} printf("\n");}
-  // printf("\n");
-
-  // double2d P2 = {0.55,0.6};  ajout_point(Msh,P2);
-  // // hash_out(Msh->Hsh);
-  // double2d P3 = {0.57,0.6};  ajout_point(Msh,P3);
-  // double2d P4 = {0.4,0.4};  ajout_point(Msh,P4);
-  // ajout_point(Msh, (double2d){0.4,0.3} );
-  // ajout_point(Msh, (double2d){0.3,0.4} );
-  // Mesh_out(Msh);
-
-  
-  Maillage_Delauney(1);
-  // msh_write(Msh_D,"ModifiedMesh.mesh");
-
-
-
-
-
-
-
+  Maillage_Delauney(4);
 
 
   //================================================================================================

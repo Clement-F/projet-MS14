@@ -330,6 +330,12 @@ int msh_neighbors(Mesh* Msh)
 
   if (!Msh) return 0;
 
+  // if(Msh->TriVoi !=NULL)
+  // {
+  //   free(Msh->TriVoi);
+  //   Msh->TriVoi =NULL;
+  // }
+
   if (Msh->TriVoi == NULL)
     Msh->TriVoi = calloc((Msh->NbrTri + 1), sizeof(int3d));
 
@@ -541,7 +547,6 @@ int hash_out(HashTable* hsh)  // print the hash table
   }
   return 0;
 }
-
 
 int hash_out_index(HashTable* hsh, int index)  // print the element of the table
 {
@@ -845,6 +850,8 @@ int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3)
     return d11*d22*d33 + d12*d23*d31 + d13*d21*d32 - d13*d22*d31 - d23*d32*d11 - d33*d12*d21 > 0.0;
 }
 
+/// ------------------------------------------------------------
+
 int* Localise_Tri(Mesh* Msh, double2d Point)
 {
 
@@ -894,6 +901,8 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
   return Result;
 
 } 
+
+
 
 int* digging_a_hole(Mesh* Msh, double2d Point) //diggy diggy hole
 {
@@ -964,22 +973,10 @@ int* digging_a_hole(Mesh* Msh, double2d Point) //diggy diggy hole
       
     }
   }
-  return cavity;
-}
 
-int2d* boundary_hole(Mesh* Msh, int* cavity)
-{
-  
   // deleting the elements of the cavity
   int Tri_neigh,i_obj,iVer1,iVer2;
-
-  int sizeof_boundary=0;
-  int2d* boundary_cavity; 
-  boundary_cavity = calloc(2*(Msh->NbrVer) +1 , sizeof(int2d));
-
-  int sizeof_cavity=0;
-  for(int i=0;i<Msh->NbrTri;i++) if(cavity[i]!=NULL) sizeof_cavity+=1;
-
+  
   for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
   {
     //----------------------------------------------------------------------------------
@@ -1010,10 +1007,27 @@ int2d* boundary_hole(Mesh* Msh, int* cavity)
     }
     //----------------------------------------------------------------------------------   
   } 
+
+  return cavity;
+}
+
+int2d* boundary_hole(Mesh* Msh, int* cavity)
+{
+  
+
+  int sizeof_boundary=0;
+  int2d* boundary_cavity; 
+  boundary_cavity = calloc(2*(Msh->NbrVer) +1 , sizeof(int2d));
+
+  int sizeof_cavity=0;
+  for(int i=0;i<=Msh->NbrTri;i++) if(cavity[i]!=NULL) sizeof_cavity+=1;
+
+  
   printf(" \n ====================================== \n");
   printf(" creating the boundary of the cavity \n");
 
   int Is_In_Cavity=0;
+  int iVer1,iVer2,i_obj;
 
   for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
   {
@@ -1050,7 +1064,7 @@ int2d* boundary_hole(Mesh* Msh, int* cavity)
       }
     } 
   } 
-  
+
   printf(" \n ====================================== \n");
   printf(" the cavity is of size %d \n", sizeof_cavity);
   for(int i=0; i<sizeof_cavity; i++){printf(" %d ", cavity[i]);}
@@ -1085,7 +1099,7 @@ int2d* boundary_hole(Mesh* Msh, int* cavity)
 int memory_allocation(Mesh* Msh, int sizeof_boundary, int sizeof_cavity)
 {
   
-  Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary;
+  Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary - sizeof_cavity ;
   Msh->NbrTri = Msh->NbrTri - sizeof_cavity;
 
   printf(" there will be at most %d triangles at the end \n", Msh->NbrTriMax);
@@ -1095,11 +1109,10 @@ int memory_allocation(Mesh* Msh, int sizeof_boundary, int sizeof_cavity)
   if (temp_Tri == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
-  } else {
+  }
+  else {
     // If reallocation is successful
-    Msh->Tri = temp_Tri;  // Update ptr1 to point to the newly allocated memory
-    // free(temp_Tri); 
-    // temp_Tri= NULL;
+    Msh->Tri = temp_Tri; 
   } 
   
   
@@ -1108,11 +1121,10 @@ int memory_allocation(Mesh* Msh, int sizeof_boundary, int sizeof_cavity)
   if (temp_Ref == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
-  } else {
+  } 
+  else {
     // If reallocation is successful
-    Msh->TriRef = temp_Ref;  // Update ptr1 to point to the newly allocated memory
-    // free(temp_Ref); 
-    // temp_Ref= NULL;
+    Msh->TriRef = temp_Ref; 
   } 
 
   printf("allocating memory for TriVoi \n");
@@ -1120,12 +1132,10 @@ int memory_allocation(Mesh* Msh, int sizeof_boundary, int sizeof_cavity)
   if (temp_Voi == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
-  } else {
+  } 
+  else {
     // If reallocation is successful
-    Msh->TriVoi = temp_Voi;  // Update ptr1 to point to the newly allocated memory
-    
-    // free(temp_Voi); 
-    // temp_Voi= NULL;
+    Msh->TriVoi = temp_Voi; 
   } 
 
   Msh->NbrVer +=1; Msh->NbrVerMax +=1;
@@ -1135,12 +1145,10 @@ int memory_allocation(Mesh* Msh, int sizeof_boundary, int sizeof_cavity)
   if (temp_crd == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
-  } else {
+  } 
+  else {
     // If reallocation is successful
-    Msh->Crd = temp_crd;  // Update ptr1 to point to the newly allocated memory
-    
-    // free(temp_crd); 
-    // temp_crd= NULL;
+    Msh->Crd = temp_crd;
     } 
 
   // ---------------------------------------- Hash Table -----------------------------------------
@@ -1151,12 +1159,11 @@ int memory_allocation(Mesh* Msh, int sizeof_boundary, int sizeof_cavity)
   if (temp_Lst == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
-  } else {
+  } 
+  else {
     // If reallocation is successful
-    Msh->Hsh->LstObj = temp_Lst;  // Update ptr1 to point to the newly allocated memory
+    Msh->Hsh->LstObj = temp_Lst; 
     
-    // free(temp_Lst); 
-    // temp_Lst= NULL;
   } 
   
   printf("allocating memory for Head \n");
@@ -1164,20 +1171,18 @@ int memory_allocation(Mesh* Msh, int sizeof_boundary, int sizeof_cavity)
   if (temp_Hd == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory");
-  } else {
+  } 
+  else {
     // If reallocation is successful
     Msh->Hsh->Head = temp_Hd;  // Update ptr1 to point to the newly allocated memory
     for(int j=Msh->Hsh->SizHead + 1;    j<2*(Msh->NbrVerMax +1);   j++){Msh->Hsh->Head[j]=0;}
 
     Msh->Hsh->SizHead = 2*(Msh->NbrVerMax);
-    // free(temp_Hd); 
-    // temp_Hd= NULL;
   } 
   // ===========================================================================
 
   return 0;
 }
-
 
 int Starring_Point(Mesh* Msh, int* cavity, int2d* boundary, double2d Point)
 {
@@ -1187,15 +1192,15 @@ int Starring_Point(Mesh* Msh, int* cavity, int2d* boundary, double2d Point)
 
   
   int sizeof_boundary=0;
-  for(int i=0;i<Msh->NbrTri;i++) if(boundary[i]!=NULL) sizeof_boundary+=1;
+  for(int i=0;i<=Msh->NbrTri;i++) if(boundary[i][0]!=NULL) sizeof_boundary+=1;
 
   
   int sizeof_cavity=0;
-  for(int i=0;i<Msh->NbrTri;i++) if(cavity[i]!=NULL) sizeof_cavity+=1;
+  for(int i=0;i<=Msh->NbrTri;i++) if(cavity[i]!=NULL) sizeof_cavity+=1;
 
-  for(int i_boundary=0; i_boundary<sizeof_boundary; i_boundary++)
+  for(int i_boundary=0; i_boundary<=sizeof_boundary; i_boundary++)
   { 
-    while( (boundary[i_boundary][0]==0 && boundary[i_boundary][1]==0) && i_boundary<sizeof_boundary){printf("boundary : %d \n ", i_boundary); i_boundary +=1;}
+    // while( (boundary[i_boundary][0]==0 && boundary[i_boundary][1]==0) && i_boundary<sizeof_boundary){printf("boundary : %d \n ", i_boundary); i_boundary +=1;}
     // if(i_boundary == sizeof_boundary) break;
 
     // printf(" test : %d \n", cavity[sizeof_cavity-1]);
@@ -1255,10 +1260,10 @@ int Starring_Point(Mesh* Msh, int* cavity, int2d* boundary, double2d Point)
 
     sizeof_cavity -=1; Msh->NbrTri +=1;
   }
+  Mesh_out(Msh);
 
   return 0;
 }
-
 
 int ajout_point(Mesh* Msh, double2d Point)
 {
@@ -1268,21 +1273,25 @@ int ajout_point(Mesh* Msh, double2d Point)
 
   // localisation of the point in the Mesh
   printf(" \n ======================= \n \n");
-  printf(" INIT the method \n");
   printf(" ADDING POINT P : (%f, %f) to the mesh \n", Point[0], Point[1]);
 
   int* cavity = digging_a_hole(Msh,Point);
-
   int2d* boundary = boundary_hole(Msh, cavity);
 
   int sizeof_cavity=0;
-  for(int i=0;i<Msh->NbrTri;i++) if(cavity[i]!=NULL) sizeof_cavity+=1;
+  for(int i=0;i<=Msh->NbrTri;i++) if(cavity[i]!=NULL) sizeof_cavity+=1;
   int sizeof_boundary=0;
-  for(int i=0;i<Msh->NbrTri;i++) if(boundary[i]!=NULL) sizeof_boundary+=1;
+  for(int i=0;i<=Msh->NbrTri;i++) if(boundary[i][0]!=NULL) sizeof_boundary+=1;
+ 
+  printf(" the cavity is of size    %d \n", sizeof_cavity);
+  printf(" the boundary is of size  %d \n", sizeof_boundary);
+
+  printf(" the cavity is made up of : \n");
+  for(int i=0;i<sizeof_cavity;i++)  printf(" cavity    %d : %d \n",i, cavity[i]);
+  printf(" the boundary is made up of : \n");
+  for(int i=0;i<sizeof_boundary;i++) printf(" boundary %d : (%d,%d) \n",i, boundary[i][0], boundary[i][1]);
 
   printf(" \n ======================= \n \n");
-
-  // Filling the cavity with the star centered on P
   
   printf(" reallocating the memory \n");
 
@@ -1300,6 +1309,8 @@ int ajout_point(Mesh* Msh, double2d Point)
 
   return 0;
 }
+
+/// ------------------------------------------------------------
 
 int Maillage_Delauney(int Nb_Point)
 {
@@ -1320,7 +1331,10 @@ int Maillage_Delauney(int Nb_Point)
     while(Crd_y<1e-2 || Crd_y>1-1e-2) Crd_y=(double)(rand())/RAND_MAX;
 
     ajout_point(Msh, (double2d){Crd_x,Crd_y} );
+
+    // msh_neighbors(Msh);
   }
+  hash_out(Msh->Hsh);
   Mesh_out(Msh);
 
   msh_write(Msh,"Delauney.mesh");
@@ -1329,9 +1343,9 @@ int Maillage_Delauney(int Nb_Point)
 
 int Mesh_out(Mesh* Msh)
 {
-  printf("The mesh is of dimension %d", Msh->Dim);
+  printf("The mesh is of dimension %d \n", Msh->Dim);
 
-  printf("The mesh is in a box of x: (%f,%f) y:(%f,%f)", Msh->Box[0],Msh->Box[1],Msh->Box[2],Msh->Box[3]);
+  // printf("The mesh is in a box of x: (%f,%f) y:(%f,%f) \n", Msh->Box[0],Msh->Box[1],Msh->Box[2],Msh->Box[3]);
 
 
 
