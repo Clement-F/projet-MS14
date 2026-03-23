@@ -77,7 +77,26 @@ int main(int argc, char* argv[])
   //================================================================================================
   //=================================         TP2        ===========================================
   //================================================================================================
-  Maillage_Delauney(7);
+  Mesh* Msh = Maillage_Delauney(100);
+  HashTable* hsh_1 = Msh->Hsh; Msh->Hsh = NULL;
+
+  msh_neighbors(Msh);
+  
+  // --- check solution
+  int iVer1,iVer2,iTri1,iTri2;
+  int jel;
+  for(int hsh_el=1;hsh_el<Msh->Hsh->NbrObj; hsh_el ++)
+  {
+    iVer1 = Msh->Hsh->LstObj[hsh_el][0];  iVer2 = Msh->Hsh->LstObj[hsh_el][1];
+    iTri1 = Msh->Hsh->LstObj[hsh_el][2];  iTri2 = Msh->Hsh->LstObj[hsh_el][3];
+
+    jel =hash_find(hsh_1,iVer1,iVer2);
+    if(jel ==0) printf("l'arrete (%d,%d) n'appartient pas a la table de hash genere \n", iVer1,iVer2);
+    if(jel !=0 && ((iTri1 != hsh_1->LstObj[jel][2] && iTri2 != hsh_1->LstObj[jel][3]) && (iTri1 != hsh_1->LstObj[jel][3] && iTri2 != hsh_1->LstObj[jel][2])))
+    {printf("l'arrete (%d,%d) n'est pas connecte au bon triangle (%d,%d) mais a (%d,%d)  \n",iVer1,iVer2,iTri1,iTri2, hsh_1->LstObj[jel][2], hsh_1->LstObj[jel][3]); } 
+  }
+
+
 
 
   //================================================================================================

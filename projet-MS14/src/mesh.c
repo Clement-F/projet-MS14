@@ -453,8 +453,12 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
   {
     int ToDelete=0;
     if((hsh->LstObj[i_hsh][2]!=0 && hsh->LstObj[i_hsh][3]==0) || (hsh->LstObj[i_hsh][3]!=0 && hsh->LstObj[i_hsh][2]==0)) ToDelete = 1;
+    
     if(ToDelete==1)
     {
+    printf("deleting the element %d",i_hsh);
+    hash_out_index(hsh,i_hsh);
+
     // we redo the chain
     int key = iVer1 + iVer2; 
     int j_hsh = hsh->Head[key];
@@ -464,10 +468,10 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
       if((hsh->LstObj[j_hsh][0]==iVer1 && hsh->LstObj[j_hsh][1]==iVer2) || (hsh->LstObj[j_hsh][1]==iVer1 && hsh->LstObj[j_hsh][0]==iVer2) ) 
       {
         // sewing it
-        if(i_bef==0){hsh->Head[key]       =hsh->LstObj[j_hsh][4];} 
-        if(i_bef!=0){hsh->LstObj[i_bef][4]=hsh->LstObj[j_hsh][4];}
+        if(i_bef==0){hsh->Head[key]       =hsh->LstObj[j_hsh][4]; printf("sewing the element to the head \n");} 
+        if(i_bef!=0){hsh->LstObj[i_bef][4]=hsh->LstObj[j_hsh][4]; printf("sewing the element to element %d \n",i_bef);}
 
-        if(j_hsh<hsh->NbrObj)
+        // if(j_hsh<hsh->NbrObj)
         {
           // permuting it with the last element
           int last_index = hsh->NbrObj;        
@@ -480,19 +484,20 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
           int j_bef = 0;
           while(k_hsh!=0)
           {
+            printf(" test %d vs %d : (%d,%d) vs (%d,%d)    \n",k_hsh,j_hsh,hsh->LstObj[k_hsh][0],hsh->LstObj[k_hsh][1], hsh->LstObj[j_hsh][0],hsh->LstObj[j_hsh][1]);
             if(hsh->LstObj[k_hsh][0]==hsh->LstObj[j_hsh][0] && hsh->LstObj[k_hsh][1]==hsh->LstObj[j_hsh][1])
             {
               if(j_bef==0){hsh->Head[key]       =hsh->LstObj[k_hsh][4];} 
               if(j_bef!=0){hsh->LstObj[j_bef][4]=hsh->LstObj[k_hsh][4];}
               for(int i=0;i<5;i++) hsh->LstObj[last_index][i]=0;
             }
-            else k_hsh = hsh->LstObj[j_bef][4];
+            else{j_bef = k_hsh; k_hsh = hsh->LstObj[j_bef][4]; printf("chain secondaire : %d -> %d \n",j_bef,k_hsh);}
           }
           hsh->NbrObj -=1;
         }
         
       }
-      else j_hsh = hsh->LstObj[j_hsh][4];      
+      else{i_bef = j_hsh; j_hsh = hsh->LstObj[j_hsh][4]; printf("chain primaire : %d -> %d \n",i_bef,j_hsh);}      
     } 
     }
 
@@ -514,13 +519,16 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
 int hash_out(HashTable* hsh)  // print the hash table
 {
   for(int j=1;j<=hsh->NbrMaxObj;j++){
-    printf(" indices = %d ", j);
-    printf(" Vertexes  : %d, %d ", hsh->LstObj[j][0], hsh->LstObj[j][1]);
-    printf(" Triangles : %d, %d ", hsh->LstObj[j][2], hsh->LstObj[j][3]);
-    printf(" next : %d \n", hsh->LstObj[j][4]);
-    // printf(" Head : %d\n",hsh->LstObj[j][0]+hsh->LstObj[j][1]);
-    // printf("----------- \n");
+    hash_out_index(hsh,j);
   }
+  printf(" \n ------------------ \n");
+
+  for(int i=1;i<=hsh->SizHead;i++)
+  {
+    printf("Head %d : %d",i,hsh->Head[i]);
+    if(i%5 ==0)printf(" \n");
+  }
+
   return 0;
 }
 
@@ -530,6 +538,7 @@ int hash_out_index(HashTable* hsh, int index)  // print the element of the table
   printf(" indices = %d ", index);
   printf(" Vertexes  : (%d,%d) ", hsh->LstObj[index][0], hsh->LstObj[index][1]);
   printf(" Triangles : (%d,%d) ", hsh->LstObj[index][2], hsh->LstObj[index][3]);
+  printf(" key : %d ",hsh->LstObj[index][0]+ hsh->LstObj[index][1]);
   printf(" next : %d\n", hsh->LstObj[index][4]);
   // printf("----------- \n");
   
@@ -887,7 +896,7 @@ int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3)
     double d32 = P3[1]-Point[1];
     double d33 = (P3[0]-Point[0])*(P3[0]-Point[0])+ ( P3[1]-Point[1])*( P3[1]-Point[1]) ;
 
-    return d11*d22*d33 + d12*d23*d31 + d13*d21*d32 - d13*d22*d31 - d23*d32*d11 - d33*d12*d21 > 0.0;
+    return (d11*d22*d33 + d12*d23*d31 + d13*d21*d32 - d13*d22*d31 - d23*d32*d11 - d33*d12*d21 > -1e-30);
 }
 
 int* Localise_Tri(Mesh* Msh, double2d Point)
@@ -912,7 +921,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
     K =(surf(P1,P2,P3));
     ax1 = surf(Point,P2,P3)/K; ax2 = surf(P1,Point, P3)/K; ax3 = surf(P1,P2,Point)/K;
 
-    printf("In the triangle %d, with neighbours (%d,%d,%d) the values are (%10f,%10f,%10f) \n",iTri,Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2],ax1,ax2,ax3);
+    // printf("In the triangle %d, with neighbours (%d,%d,%d) the values are (%10f,%10f,%10f) \n",iTri,Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2],ax1,ax2,ax3);
     //check
     if(ax1<0 && (ax2<0 && ax3<0) ) printf("\n ERROR POINT OR TRIANGLE WRONGLY DEFINED, IGNORED \n");
 
@@ -933,7 +942,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
 
     if((ax1>0 && (ax2>0 && ax3>0)) && on_edge ==0 ){ in_trig=1;}
 
-    if(iTri == 0){edge_case +=1; iTri = edge_case; printf(" no you don't \n");}
+    if(iTri == 0){edge_case +=1; iTri = edge_case;}
   }
 
   if(on_edge) printf("The Point has been located on an edge between %d and %d \n", iTri,edge_Tri);
@@ -1229,8 +1238,8 @@ int Starring_Point(Mesh* Msh, int* cavity, int2d* boundary, double2d Point)
       jTri = Msh->Hsh->LstObj[j_hsh][3];
       if(jTri == Tri_added) jTri = Msh->Hsh->LstObj[j_hsh][2];
 
-      printf("%d : (%d,%d) links %d to %d \n",j_hsh, iVer1,iVer2, jTri,Tri_added);
-      hash_out_index(Msh->Hsh,j_hsh);
+      // printf("%d : (%d,%d) links %d to %d \n",j_hsh, iVer1,iVer2, jTri,Tri_added);
+      // hash_out_index(Msh->Hsh,j_hsh);
       Msh->TriVoi[Tri_added][iEdg] = jTri;
       for(int jEdg=0;jEdg<3;jEdg++)
         {
@@ -1239,7 +1248,7 @@ int Starring_Point(Mesh* Msh, int* cavity, int2d* boundary, double2d Point)
             if((jVer1 == iVer1 && jVer2 == iVer2) || (jVer1 == iVer2 && jVer2 == iVer1))
             {
               Msh->TriVoi[jTri][jEdg] = Tri_added; 
-              printf("The neighbour of %d is by edge (%d,%d) now %d\n", jTri,Msh->Tri[jTri][tri2edg[jEdg][0]],Msh->Tri[jTri][tri2edg[jEdg][1]],Tri_added);
+              // printf("The neighbour of %d is by edge (%d,%d) now %d\n", jTri,Msh->Tri[jTri][tri2edg[jEdg][0]],Msh->Tri[jTri][tri2edg[jEdg][1]],Tri_added);
               
             }
         }
@@ -1262,15 +1271,15 @@ int ajout_point(Mesh* Msh, double2d Point)
 
   int* cavity = digging_a_hole(Msh,Point);
 
-  printf("The cavity of that point is of size %d and made up of \n",sizeof_cavity);
-  for(int i=0;i<sizeof_cavity;i++){printf("%d : (%d,%d,%d)\n", cavity[i],Msh->Tri[cavity[i]][0],Msh->Tri[cavity[i]][1],Msh->Tri[cavity[i]][2]);}
+  // printf("The cavity of that point is of size %d and made up of \n",sizeof_cavity);
+  // for(int i=0;i<sizeof_cavity;i++){printf("%d : (%d,%d,%d)\n", cavity[i],Msh->Tri[cavity[i]][0],Msh->Tri[cavity[i]][1],Msh->Tri[cavity[i]][2]);}
 
   deleting_Cavity(Msh,cavity);
 
   int2d* boundary = boundary_hole(Msh, cavity);
   
-  printf("The boundary of that cavity is of size %d and made up of \n",sizeof_boundary);
-  for(int i=0;i<sizeof_boundary;i++){printf("%d : (%d,%d)\n",i ,boundary[i][0], boundary[i][1]);}
+  // printf("The boundary of that cavity is of size %d and made up of \n",sizeof_boundary);
+  // for(int i=0;i<sizeof_boundary;i++){printf("%d : (%d,%d)\n",i ,boundary[i][0], boundary[i][1]);}
 
   memory_allocation(Msh);
   
@@ -1279,17 +1288,16 @@ int ajout_point(Mesh* Msh, double2d Point)
 
   Starring_Point(Msh,cavity,boundary,Point);
 
-  Mesh_out(Msh);
 
   return 0;
 }
 
 /// ------------------------------------------------------------
 
-int Maillage_Delauney(int Nb_Point)
+Mesh* Maillage_Delauney(int Nb_Point)
 {
   printf("Creating a Mesh based on Delauney method \n");
-  srand(10);
+  srand(7);
   //--- read a mesh
   Mesh* Msh = msh_read("../data/carre_base.mesh", 0);
 
@@ -1307,13 +1315,17 @@ int Maillage_Delauney(int Nb_Point)
 
     ajout_point(Msh, (double2d){Crd_x,Crd_y} );
 
-    Check_hash(Msh);
+    // free(Msh->TriVoi); Msh->TriVoi =NULL;
+    // Msh->Hsh = NULL;
+    // msh_neighbors(Msh);
+
+    // Check_hash(Msh);
   }
   // hash_out(Msh->Hsh);
   // Mesh_out(Msh);
 
   msh_write(Msh,"Delauney.mesh");
-  return 0;
+  return Msh;
 }
 
 int Mesh_out(Mesh* Msh)
