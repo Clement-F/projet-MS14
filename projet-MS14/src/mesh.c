@@ -371,7 +371,9 @@ int msh_neighbors(Mesh* Msh)
     }
   }
 
-  Msh->Hsh = hsh;
+  free(hsh);
+  hsh = NULL;
+  // Msh->Hsh = hsh;
   return 1;
 }
 
@@ -435,7 +437,7 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
   if(i_hsh !=0)
   { 
     if(hsh->LstObj[i_hsh][3] ==0){hsh->LstObj[i_hsh][3] = iTri;} 
-    else printf(" ## WARNING: HSH ELEMENT %d ALREADY COMPLETE (%d,%d); (%d,%d) -> %d. \n IGNORED\n",i_hsh,hsh->LstObj[i_hsh][0],hsh->LstObj[i_hsh][1],hsh->LstObj[i_hsh][2],hsh->LstObj[i_hsh][3],hsh->LstObj[i_hsh][4] );
+    else printf(" ## WARNING: HSH ELEMENT %d / %d ALREADY COMPLETE (%d,%d); (%d,%d) -> %d. \n IGNORED\n",i_hsh, hsh->NbrMaxObj,hsh->LstObj[i_hsh][0],hsh->LstObj[i_hsh][1],hsh->LstObj[i_hsh][2],hsh->LstObj[i_hsh][3],hsh->LstObj[i_hsh][4] );
     // printf("updating element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", i_hsh, iVer1,iVer2, hsh->LstObj[hsh->NbrObj][3], iTri, hsh->LstObj[hsh->NbrObj][4]);
   }
 
@@ -896,7 +898,7 @@ int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3)
     double d32 = P3[1]-Point[1];
     double d33 = (P3[0]-Point[0])*(P3[0]-Point[0])+ ( P3[1]-Point[1])*( P3[1]-Point[1]) ;
 
-    return (d11*d22*d33 + d12*d23*d31 + d13*d21*d32 - d13*d22*d31 - d23*d32*d11 - d33*d12*d21 > -1e-30);
+    return (d11*d22*d33 + d12*d23*d31 + d13*d21*d32 - d13*d22*d31 - d23*d32*d11 - d33*d12*d21 > 0.0);
 }
 
 int* Localise_Tri(Mesh* Msh, double2d Point)
@@ -927,7 +929,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
 
     // 3 direct neighbours
     // printf(" from the directions available : (%d,%d,%d) \n", Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2]);
-    // printf(" going in direction : (%d,%d,%d) towards : %d  \n", ax1<0, ax2<0, ax3<0, iTri);
+    
 
     // we could change the choice of the direction
     // here we have a bias against the direction 1 
@@ -940,11 +942,15 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
     if(ax2<0 && compass ==0){ iTri = Msh->TriVoi[iTri][1]; compass =1;}
     if(ax3<0 && compass ==0){ iTri = Msh->TriVoi[iTri][2]; compass =1;}
 
-    if((ax1>0 && (ax2>0 && ax3>0)) && on_edge ==0 ){ in_trig=1;}
+    // printf(" going in direction : (%d,%d,%d) towards : %d  \n", ax1<0, ax2<0, ax3<0, iTri);
 
+    if((ax1>0 && (ax2>0 && ax3>0)) && on_edge ==0 ){ in_trig=1;}
+    
     if(iTri == 0){edge_case +=1; iTri = edge_case;}
   }
 
+  if(on_edge && iTri == 0){on_edge=0; iTri = edge_Tri; in_trig =1;}
+  if(on_edge && edge_Tri == 0){on_edge=0; in_trig=1;}
   if(on_edge) printf("The Point has been located on an edge between %d and %d \n", iTri,edge_Tri);
   if(in_trig) printf("The Point has been located in triangle %d \n",iTri);
 
@@ -985,7 +991,7 @@ int* digging_a_hole(Mesh* Msh, double2d Point) //diggy diggy hole
     iTri = pile[sizeof_pile]; sizeof_pile -=1;
     cavity[sizeof_cavity] = iTri; sizeof_cavity +=1;
 
-    printf("adding tri %d to the pile \n",iTri);
+    // printf("adding tri %d to the pile \n",iTri);
 
     // check if the neighbours are in the cavity
     for(int jEdg=0;jEdg<3; jEdg++) 
@@ -1027,7 +1033,7 @@ int deleting_Cavity(Mesh* Msh, int* cavity)  // deleting the elements of the cav
   for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
   {
     Tri_cavity = cavity[i_cavity];
-    printf("Deleting triangle %d from the mesh \n",Tri_cavity);
+    // printf("Deleting triangle %d from the mesh \n",Tri_cavity);
     //----------------------------------------------------------------------------------
     // deleting it from it's neighbours's list of neighbours
     for(int i=0; i<3; i++)
@@ -1070,7 +1076,7 @@ int3d* boundary_hole(Mesh* Msh, int* cavity)
           boundary_cavity[i][0]=boundary_cavity[sizeof_boundary][0];
           boundary_cavity[i][1]=boundary_cavity[sizeof_boundary][1];
           boundary_cavity[i][2]=boundary_cavity[sizeof_boundary][2];
-          printf(" removing boundary : (%d,%d) linked to %d \n", boundary_cavity[sizeof_boundary][0],boundary_cavity[sizeof_boundary][1],boundary_cavity[sizeof_boundary][2]);
+          // printf(" removing boundary : (%d,%d) linked to %d \n", boundary_cavity[sizeof_boundary][0],boundary_cavity[sizeof_boundary][1],boundary_cavity[sizeof_boundary][2]);
           break; 
         }
       }     
@@ -1081,7 +1087,7 @@ int3d* boundary_hole(Mesh* Msh, int* cavity)
       boundary_cavity[sizeof_boundary][0]=iVer1;
       boundary_cavity[sizeof_boundary][1]=iVer2;
       boundary_cavity[sizeof_boundary][2]=Msh->TriVoi[cavity[i_cavity]][i_Edg];
-      printf(" adding boundary : (%d,%d) linked to %d \n", iVer1,iVer2,Msh->TriVoi[cavity[i_cavity]][i_Edg]);
+      // printf(" adding boundary : (%d,%d) linked to %d \n", iVer1,iVer2,Msh->TriVoi[cavity[i_cavity]][i_Edg]);
       sizeof_boundary +=1;
       }
     } 
@@ -1163,13 +1169,14 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
   double surface;
   int temp_size = sizeof_cavity;
 
+  // starring the point to the cavity's boundary
   for(int i_boundary=0; i_boundary<sizeof_boundary; i_boundary++)
   { 
     while( (boundary[i_boundary][0]==0 || boundary[i_boundary][1]==0) && i_boundary<sizeof_boundary){i_boundary +=1;}
     if(i_boundary > sizeof_boundary) break;
 
     if(sizeof_cavity>0){Tri_added = cavity[sizeof_cavity-1];}
-    else{Tri_added = Msh->NbrTri+1;}
+    else{Tri_added = Msh->NbrTri+1; cavity[i_boundary]= Tri_added;}
     
     // add to Tri
     iVer1 = boundary[i_boundary][0]; 
@@ -1182,6 +1189,7 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
     Msh->Tri[Tri_added][1]= iVer1;
     Msh->Tri[Tri_added][2]= Msh->NbrVer;
     Msh->TriRef[Tri_added] =1;
+    Msh->TriVoi[Tri_added][0] =0; Msh->TriVoi[Tri_added][1] =0;
     }
     else
     {      
@@ -1189,44 +1197,67 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
       Msh->Tri[Tri_added][1]= iVer2;
       Msh->Tri[Tri_added][2]= Msh->NbrVer;
     Msh->TriRef[Tri_added] =1;
+    Msh->TriVoi[Tri_added][0] =0; Msh->TriVoi[Tri_added][1] =0;
     }
     
-    printf("updating neighbours \n");
-    printf("boundary neighbours \n");
+    // printf("updating neighbours \n");
+    // printf("boundary neighbours \n");
+
+    // linking the edge of the cavity to the outside
     Tri_bound = boundary[i_boundary][2];
     Msh->TriVoi[Tri_added][2] =Tri_bound;
     for(int iEdg=0;iEdg<3;iEdg++)
     {
     jVer1 = Msh->Tri[Tri_bound][tri2edg[iEdg][0]];
     jVer2 = Msh->Tri[Tri_bound][tri2edg[iEdg][1]];
-    if((iVer1==jVer1 && iVer2 == jVer2) || (iVer2 == jVer1 && iVer1 == jVer2))  Msh->TriVoi[Tri_bound][iEdg]=Tri_added;
+    if((iVer1==jVer1 && iVer2 == jVer2) || (iVer2 == jVer1 && iVer1 == jVer2)){Msh->TriVoi[Tri_bound][iEdg]=Tri_added;}
     }
 
     sizeof_cavity -=1; Msh->NbrTri +=1;
   }
 
+  // updating the neighbours of the star using a quadratic algorithm.
+  int iTri,jTri;
+  // int iVer3,jVer3;
   for(int i_boundary=0;i_boundary<sizeof_boundary;i_boundary++)
   {
+    // // take a triangle outside the cavity but on the boundary's edge: Tri_bound.
+    // iVer1 = boundary[i_boundary][0]; 
+    // iVer2 = boundary[i_boundary][1]; 
+    // Tri_bound = boundary[i_boundary][2];
 
-    Tri_bound = boundary[i_boundary][2];
-    Msh->TriVoi[Tri_added][2] =Tri_bound;
-    for(int iEdg=0;iEdg<3;iEdg++)
+    // // iTri will be it's neighbour inside the cavity.
+    // for(int iEdg=0;iEdg<3;iEdg++)
+    // {
+    // jVer1 = Msh->Tri[Tri_bound][tri2edg[iEdg][0]];
+    // jVer2 = Msh->Tri[Tri_bound][tri2edg[iEdg][1]];
+    // if((iVer1==jVer1 && iVer2 == jVer2) || (iVer2 == jVer1 && iVer1 == jVer2))  iTri= Msh->TriVoi[Tri_bound][iEdg];
+    // }
+
+    // or just stock it inside an array
+    iTri = cavity[i_boundary];
+    iVer1 = Msh->Tri[iTri][0];
+    iVer2 = Msh->Tri[iTri][1];
+    // check which Tri has a point in common with iTri
+    for(int j_bound=0;j_bound<sizeof_boundary;j_bound++)
     {
-    jVer1 = Msh->Tri[Tri_bound][tri2edg[iEdg][0]];
-    jVer2 = Msh->Tri[Tri_bound][tri2edg[iEdg][1]];
-    if((iVer1==jVer1 && iVer2 == jVer2) || (iVer2 == jVer1 && iVer1 == jVer2))  Tri_added= Msh->TriVoi[Tri_bound][iEdg];
-    }
-
-
-    for(int j_boundary=0;j_boundary<sizeof_boundary;j_boundary++)
-    {
-      Tri_bound = boundary[j_boundary][2];  
-      if(boundary[j_boundary][0]==iVer1){
-        if(surface>0) Msh->TriVoi[];
+      
+      jTri = cavity[j_bound];
+      
+      jVer1 = Msh->Tri[jTri][tri2edg[2][0]];
+      jVer2 = Msh->Tri[jTri][tri2edg[2][1]];
+      // printf("iTri : %d (%d,%d,%d); jTri : %d (%d,%d,%d) \n", iTri,iVer1,iVer2,iVer3   ,jTri,jVer1,jVer2,jVer3);
+      if(iTri != jTri )
+      {
+      if(jVer2 == iVer1){ Msh->TriVoi[jTri][0] = iTri; Msh->TriVoi[iTri][1] = jTri; }
+      if(iVer2 == jVer1){ Msh->TriVoi[iTri][0] = jTri; Msh->TriVoi[jTri][1] = iTri; }
+      if(jVer1 == iVer1 || jVer2 == iVer2) printf("ERROR TRIANGLE NOT DEF CORRECTLY \n");
       }
-      sizeof_cavity -=1; 
     }
+    // Msh->TriVoi[iTri][2] = boundary[i_boundary][2];
+
   }
+  printf(" point starred \n");
 
   return 0;
 }
@@ -1275,7 +1306,7 @@ Mesh* Maillage_Delauney(int Nb_Point)
 
   msh_neighbors(Msh);
 
-  for(int it=0;it<=Nb_Point;it++)
+  for(int it=1;it<=Nb_Point;it++)
   {
     printf("------------ adding point %d to the mesh ----------- \n",it+1);
     Crd_x=(double)(rand())/RAND_MAX;
@@ -1285,13 +1316,33 @@ Mesh* Maillage_Delauney(int Nb_Point)
 
     ajout_point(Msh, (double2d){Crd_x,Crd_y} );
 
+    printf(" point added \n ");
   }
-  // hash_out(Msh->Hsh);
-  // Mesh_out(Msh);
+  
+  double regul = (double)(Nb_Point)/(double)4;
+  if(Nb_Point>4){
+    for(int it=0; it+1<regul; it++)
+    {
+      printf("------------ adding point %d to the mesh's edges  ----------- \n",4*it+1);
+      ajout_point(Msh, (double2d){(double)(it+1)/regul ,0});
+      printf("------------ adding point %d to the mesh's edges  ----------- \n",4*it+2);
+      ajout_point(Msh, (double2d){(double)(it+1)/regul,1});
+      printf("------------ adding point %d to the mesh's edges  ----------- \n",4*it+3);
+      ajout_point(Msh, (double2d){0,(double)(it+1)/regul}); 
+      printf("------------ adding point %d to the mesh's edges  ----------- \n",4*it+4);
+      ajout_point(Msh, (double2d){1,(double)(it+1)/regul});
+    }
+  }
+
+
+  // printf("------------ adding point %d to the mesh's edges  ----------- \n",1);
+  // ajout_point(Msh, (double2d){0.5 ,0});
+  printf(" mesh completed \n");
+  
 
   msh_write(Msh,"Delauney.mesh");
   return Msh;
-}
+  }
 
 int Mesh_out(Mesh* Msh)
 {
@@ -1303,17 +1354,15 @@ int Mesh_out(Mesh* Msh)
 
   printf("The mesh is made out of \n");
   printf("Vertexes : \n");
-  for(int i=0;i<=Msh->NbrVerMax;i++) printf("Vert : %d, (%f,%f) \n", i,Msh->Crd[i][0], Msh->Crd[i][1]);
+  for(int i=1;i<=Msh->NbrVerMax;i++) printf("Vert : %d, (%f,%f) \n", i,Msh->Crd[i][0], Msh->Crd[i][1]);
   printf(" \n ============== \n");
   printf("Triangles : \n");
-  for(int i=0;i<=Msh->NbrTriMax;i++) printf("Tri : %d,  (%d,%d,%d), ref : %d, Voi :(%d,%d,%d) \n", i, Msh->Tri[i][0], Msh->Tri[i][1], Msh->Tri[i][2],Msh->TriRef[i], Msh->TriVoi[i][0],Msh->TriVoi[i][1],Msh->TriVoi[i][2]);
+  for(int i=1;i<=Msh->NbrTriMax;i++) printf("Tri : %d,  (%d,%d,%d), ref : %d, Voi :(%d,%d,%d) \n", i, Msh->Tri[i][0], Msh->Tri[i][1], Msh->Tri[i][2],Msh->TriRef[i], Msh->TriVoi[i][0],Msh->TriVoi[i][1],Msh->TriVoi[i][2]);
   printf(" \n ============== \n");
-
-  hash_out(Msh->Hsh);
 
   printf(" there are in total : %d Triangle and a maximum of %d \n", Msh->NbrTri, Msh->NbrTriMax);
   printf(" there are in total : %d Vertex   and a maximum of %d \n", Msh->NbrVer  , Msh->NbrVerMax);
-  printf(" there are in total : %d Edges    and a maximum of %d \n", Msh->Hsh->NbrObj, Msh->Hsh->NbrMaxObj);
+  // printf(" there are in total : %d Edges    and a maximum of %d \n", Msh->Hsh->NbrObj, Msh->Hsh->NbrMaxObj);
 
   return 0;
 

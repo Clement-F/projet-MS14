@@ -2,15 +2,15 @@
 
 int main(int argc, char* argv[])
 {
-  // int    iTri, iVer;
-  // double to, ti;
+  int    iTri, iVer;
+  double to, ti;
 
   // if (argc < 2) {
   //   printf(" usage : mesh file \n");
   //   return 0;
   // }
 
-  //--- read a mesh
+  // --- read a mesh
   // to        = clock();
   // Mesh* Msh = msh_read(argv[1], 0);
   // ti        = clock();
@@ -77,27 +77,45 @@ int main(int argc, char* argv[])
   //================================================================================================
   //=================================         TP2        ===========================================
   //================================================================================================
-  Mesh* Msh = Maillage_Delauney(100);
-  HashTable* hsh_1 = Msh->Hsh; Msh->Hsh = NULL;
-
+  Mesh* Msh = Maillage_Delauney(64);
   msh_neighbors(Msh);
   
-  // --- check solution
-  int iVer1,iVer2,iTri1,iTri2;
-  int jel;
-  for(int hsh_el=1;hsh_el<Msh->Hsh->NbrObj; hsh_el ++)
-  {
-    iVer1 = Msh->Hsh->LstObj[hsh_el][0];  iVer2 = Msh->Hsh->LstObj[hsh_el][1];
-    iTri1 = Msh->Hsh->LstObj[hsh_el][2];  iTri2 = Msh->Hsh->LstObj[hsh_el][3];
+  printf(" Mesh created \n");
+  // // --- check solution
+  // int iVer1,iVer2,iTri1,iTri2;
+  // int jel;
+  // for(int hsh_el=1;hsh_el<Msh->Hsh->NbrObj; hsh_el ++)
+  // {
+  //   iVer1 = Msh->Hsh->LstObj[hsh_el][0];  iVer2 = Msh->Hsh->LstObj[hsh_el][1];
+  //   iTri1 = Msh->Hsh->LstObj[hsh_el][2];  iTri2 = Msh->Hsh->LstObj[hsh_el][3];
 
-    jel =hash_find(hsh_1,iVer1,iVer2);
-    if(jel ==0) printf("l'arrete (%d,%d) n'appartient pas a la table de hash genere \n", iVer1,iVer2);
-    if(jel !=0 && ((iTri1 != hsh_1->LstObj[jel][2] && iTri2 != hsh_1->LstObj[jel][3]) && (iTri1 != hsh_1->LstObj[jel][3] && iTri2 != hsh_1->LstObj[jel][2])))
-    {printf("l'arrete (%d,%d) n'est pas connecte au bon triangle (%d,%d) mais a (%d,%d)  \n",iVer1,iVer2,iTri1,iTri2, hsh_1->LstObj[jel][2], hsh_1->LstObj[jel][3]); } 
+  //   jel =hash_find(hsh_1,iVer1,iVer2);
+  //   if(jel ==0) printf("l'arrete (%d,%d) n'appartient pas a la table de hash genere \n", iVer1,iVer2);
+  //   if(jel !=0 && ((iTri1 != hsh_1->LstObj[jel][2] && iTri2 != hsh_1->LstObj[jel][3]) && (iTri1 != hsh_1->LstObj[jel][3] && iTri2 != hsh_1->LstObj[jel][2])))
+  //   {printf("l'arrete (%d,%d) n'est pas connecte au bon triangle (%d,%d) mais a (%d,%d)  \n",iVer1,iVer2,iTri1,iTri2, hsh_1->LstObj[jel][2], hsh_1->LstObj[jel][3]); } 
+  // }
+  // printf(" Mesh checked \n");
+
+  Mesh_out(Msh);
+
+
+  printf("Quality evaluation :\n");
+  to = clock();
+  double* Qal = (double*)malloc(sizeof(double) * (Msh->NbrTri + 1));
+
+  int i1,i2,i3;
+
+  for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
+  // printf("calc %d \n",iTri);
+  i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
+  double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
+  double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
+  double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
+  Qal[iTri] = quality(P1,P2,P3);
   }
-
-
-
+  msh_write2dfield_Triangles("quality.sol", Msh->NbrTri, Qal);
+  ti = clock();
+  printf("quality evaluated in  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   //================================================================================================
   //=============================         Exercice 3        ========================================
