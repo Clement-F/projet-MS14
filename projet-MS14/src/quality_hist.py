@@ -10,6 +10,10 @@ for k in range(9,len(lines)-2):
 n = len(qual)
 Quality = np.array(qual) 
 
+for k in range(0,n): 
+    if(Quality[k]>10e3): 
+        print(" element ",k," is of quality :",Quality[k],"\n")
+
 
 plt.hist(Quality,20, log=True)
 plt.xlabel("qualité")

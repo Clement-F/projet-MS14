@@ -5,15 +5,15 @@ int main(int argc, char* argv[])
   int    iTri, iVer;
   double to, ti;
 
-  // if (argc < 2) {
-  //   printf(" usage : mesh file \n");
-  //   return 0;
-  // }
+  if (argc < 2) {
+    printf(" usage : mesh file \n");
+    return 0;
+  }
 
   // --- read a mesh
-  // to        = clock();
-  // Mesh* Msh = msh_read(argv[1], 0);
-  // ti        = clock();
+  to        = clock();
+  Mesh* Msh = msh_read(argv[1], 0);
+  ti        = clock();
 
   // Mesh* Msh_Q = msh_read(argv[1], 1);
 
@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
   //================================================================================================
   //=================================         TP2        ===========================================
   //================================================================================================
-  Mesh* Msh = Maillage_Delauney(64);
+  Msh = Maillage_Delauney(10000,Msh);
   msh_neighbors(Msh);
   
   printf(" Mesh created \n");
@@ -96,7 +96,6 @@ int main(int argc, char* argv[])
   // }
   // printf(" Mesh checked \n");
 
-  Mesh_out(Msh);
 
 
   printf("Quality evaluation :\n");

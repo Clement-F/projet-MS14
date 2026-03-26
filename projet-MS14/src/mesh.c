@@ -836,7 +836,7 @@ double quality(double2d P1, double2d P2, double2d P3)
   K_surf = fabs(surf(P1,P2,P3));
   
   if(K_surf < 1e-30){printf("\n ---- \n ERROR SURFACE NULLE (%f,%f),(%f,%f) (%f,%f) \n ---- \n",
-                                                    P1[0],P1[1], P2[0],P2[1], P3[0],P3[1]);}
+                                                    P1[0],P1[1], P2[0],P2[1], P3[0],P3[1]); return 0;}
   
   double Qal = alpha *(a+b+c)/K_surf; 
   return Qal;
@@ -898,7 +898,7 @@ int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3)
     double d32 = P3[1]-Point[1];
     double d33 = (P3[0]-Point[0])*(P3[0]-Point[0])+ ( P3[1]-Point[1])*( P3[1]-Point[1]) ;
 
-    return (d11*d22*d33 + d12*d23*d31 + d13*d21*d32 - d13*d22*d31 - d23*d32*d11 - d33*d12*d21 > 0.0);
+    return (d11*d22*d33 + d12*d23*d31 + d13*d21*d32 - d13*d22*d31 - d23*d32*d11 - d33*d12*d21 > 1e-10);
 }
 
 int* Localise_Tri(Mesh* Msh, double2d Point)
@@ -1111,7 +1111,7 @@ int3d* boundary_hole(Mesh* Msh, int* cavity)
 
 int memory_allocation(Mesh* Msh)
 {
-  int security = 2;
+  int security = 1;
   Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary - sizeof_cavity ;
   Msh->NbrTri = Msh->NbrTri - sizeof_cavity;
 
@@ -1149,7 +1149,7 @@ int memory_allocation(Mesh* Msh)
 
   Msh->NbrVer +=1; Msh->NbrVerMax +=1 ;
   
-  double2d* temp_crd = realloc(Msh->Crd , (Msh->NbrVerMax+1 +security)*sizeof(double3d));
+  double2d* temp_crd = realloc(Msh->Crd , (Msh->NbrVerMax+1 +security)*sizeof(double2d));
   if (temp_crd == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory of Crd \n");
@@ -1167,12 +1167,27 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
   int Tri_added, Tri_bound;
   int iVer1,iVer2,jVer1,jVer2;
   double surface;
-  int temp_size = sizeof_cavity;
 
   // starring the point to the cavity's boundary
   for(int i_boundary=0; i_boundary<sizeof_boundary; i_boundary++)
   { 
-    while( (boundary[i_boundary][0]==0 || boundary[i_boundary][1]==0) && i_boundary<sizeof_boundary){i_boundary +=1;}
+    iVer1 = boundary[i_boundary][0]; 
+    iVer2 = boundary[i_boundary][1]; 
+    double* P1; double* P2;
+    P1 = Msh->Crd[iVer1]; P2 = Msh->Crd[iVer2];
+
+    while( ((boundary[i_boundary][0]==0 || boundary[i_boundary][1]==0) && i_boundary<sizeof_boundary) || fabs(surf(P1,P2,Point)) <1e-30)
+    {
+    i_boundary +=1;
+    iVer1 = boundary[i_boundary][0]; 
+    iVer2 = boundary[i_boundary][1]; 
+    P1 = Msh->Crd[iVer1]; P2 = Msh->Crd[iVer2];
+    
+    if(i_boundary > sizeof_boundary) break;
+
+    }
+
+
     if(i_boundary > sizeof_boundary) break;
 
     if(sizeof_cavity>0){Tri_added = cavity[sizeof_cavity-1];}
@@ -1221,19 +1236,6 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
   // int iVer3,jVer3;
   for(int i_boundary=0;i_boundary<sizeof_boundary;i_boundary++)
   {
-    // // take a triangle outside the cavity but on the boundary's edge: Tri_bound.
-    // iVer1 = boundary[i_boundary][0]; 
-    // iVer2 = boundary[i_boundary][1]; 
-    // Tri_bound = boundary[i_boundary][2];
-
-    // // iTri will be it's neighbour inside the cavity.
-    // for(int iEdg=0;iEdg<3;iEdg++)
-    // {
-    // jVer1 = Msh->Tri[Tri_bound][tri2edg[iEdg][0]];
-    // jVer2 = Msh->Tri[Tri_bound][tri2edg[iEdg][1]];
-    // if((iVer1==jVer1 && iVer2 == jVer2) || (iVer2 == jVer1 && iVer1 == jVer2))  iTri= Msh->TriVoi[Tri_bound][iEdg];
-    // }
-
     // or just stock it inside an array
     iTri = cavity[i_boundary];
     iVer1 = Msh->Tri[iTri][0];
@@ -1295,18 +1297,14 @@ int ajout_point(Mesh* Msh, double2d Point)
 
 /// ------------------------------------------------------------
 
-Mesh* Maillage_Delauney(int Nb_Point)
+Mesh* Maillage_Delauney(int Nb_Point, Mesh* Msh)
 {
   printf("Creating a Mesh based on Delauney method \n");
-  srand(7);
-  //--- read a mesh
-  Mesh* Msh = msh_read("../data/carre_base.mesh", 0);
+  srand(10);
 
   double Crd_x,Crd_y;
-
   msh_neighbors(Msh);
-
-  for(int it=1;it<=Nb_Point;it++)
+  for(int it=0;it<=Nb_Point;it++)
   {
     printf("------------ adding point %d to the mesh ----------- \n",it+1);
     Crd_x=(double)(rand())/RAND_MAX;
@@ -1317,21 +1315,22 @@ Mesh* Maillage_Delauney(int Nb_Point)
     ajout_point(Msh, (double2d){Crd_x,Crd_y} );
 
     printf(" point added \n ");
+
+   
   }
-  
-  double regul = (double)(Nb_Point)/(double)4;
-  if(Nb_Point>4){
-    for(int it=0; it+1<regul; it++)
-    {
-      printf("------------ adding point %d to the mesh's edges  ----------- \n",4*it+1);
-      ajout_point(Msh, (double2d){(double)(it+1)/regul ,0});
-      printf("------------ adding point %d to the mesh's edges  ----------- \n",4*it+2);
-      ajout_point(Msh, (double2d){(double)(it+1)/regul,1});
-      printf("------------ adding point %d to the mesh's edges  ----------- \n",4*it+3);
-      ajout_point(Msh, (double2d){0,(double)(it+1)/regul}); 
-      printf("------------ adding point %d to the mesh's edges  ----------- \n",4*it+4);
-      ajout_point(Msh, (double2d){1,(double)(it+1)/regul});
-    }
+
+  double regul = (double)(Nb_Point)/(double)64;
+  // if we have enough points, add an edge point
+  for(int jt=0;jt+1<regul; jt++)
+  {
+    printf("------------ adding point %d to the mesh's edges  ----------- \n",4*jt+1);
+    ajout_point(Msh, (double2d){(double)(jt+1)/regul ,0});
+    printf("------------ adding point %d to the mesh's edges  ----------- \n",4*jt+2);
+    ajout_point(Msh, (double2d){(double)(jt+1)/regul,1});
+    printf("------------ adding point %d to the mesh's edges  ----------- \n",4*jt+3);
+    ajout_point(Msh, (double2d){0,(double)(jt+1)/regul}); 
+    printf("------------ adding point %d to the mesh's edges  ----------- \n",4*jt+4);
+    ajout_point(Msh, (double2d){1,(double)(jt+1)/regul});
   }
 
 
