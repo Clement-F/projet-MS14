@@ -125,3 +125,4 @@ int hash_out_index(HashTable* hsh, int index);  // print the element of the tabl
 
 Mesh* Maillage_Delauney(int Nb_Point,Mesh* Msh);
 int Mesh_out(Mesh* Msh);
+int Compression(Mesh* Msh, double* sol, int factor);

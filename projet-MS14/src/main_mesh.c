@@ -10,9 +10,12 @@ int main(int argc, char* argv[])
     return 0;
   }
 
+  char* file = argv[1];
+  char* file_mesh = malloc(1+4+strlen(file)); strcpy(file_mesh,file); strcat(file_mesh,".mesh"); 
+  char* file_sol = malloc(1+4+strlen(file)); strcpy(file_sol,file); strcat(file_sol,".sol"); 
   // --- read a mesh
   to        = clock();
-  Mesh* Msh = msh_read(argv[1], 0);
+  Mesh* Msh = msh_read(file_mesh, 0);
   ti        = clock();
 
   // Mesh* Msh_Q = msh_read(argv[1], 1);
@@ -77,10 +80,10 @@ int main(int argc, char* argv[])
   //================================================================================================
   //=================================         TP2        ===========================================
   //================================================================================================
-  Msh = Maillage_Delauney(10000,Msh);
-  msh_neighbors(Msh);
+  // Msh = Maillage_Delauney(10000,Msh);
+  // msh_neighbors(Msh);
   
-  printf(" Mesh created \n");
+  // printf(" Mesh created \n");
   // // --- check solution
   // int iVer1,iVer2,iTri1,iTri2;
   // int jel;
@@ -98,23 +101,31 @@ int main(int argc, char* argv[])
 
 
 
-  printf("Quality evaluation :\n");
-  to = clock();
-  double* Qal = (double*)malloc(sizeof(double) * (Msh->NbrTri + 1));
+  // printf("Quality evaluation :\n");
+  // to = clock();
+  // double* Qal = (double*)malloc(sizeof(double) * (Msh->NbrTri + 1));
 
-  int i1,i2,i3;
+  // int i1,i2,i3;
 
-  for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
-  // printf("calc %d \n",iTri);
-  i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
-  double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
-  double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
-  double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
-  Qal[iTri] = quality(P1,P2,P3);
-  }
-  msh_write2dfield_Triangles("quality.sol", Msh->NbrTri, Qal);
-  ti = clock();
-  printf("quality evaluated in  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+  // for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
+  // // printf("calc %d \n",iTri);
+  // i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
+  // double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
+  // double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
+  // double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
+  // Qal[iTri] = quality(P1,P2,P3);
+  // }
+  // msh_write2dfield_Triangles("quality.sol", Msh->NbrTri, Qal);
+  // ti = clock();
+  // printf("quality evaluated in  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+
+  // --------------------------------- COMPRESSION ----------------------------------
+ 
+  printf("filename : %s \n",file_sol);
+  double* sol =sol_read(file_sol,2,Msh->NbrVer);
+
+  if(sol==NULL){printf(" sol void \n");};
+  Compression(Msh,sol,2);
 
   //================================================================================================
   //=============================         Exercice 3        ========================================

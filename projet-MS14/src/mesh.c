@@ -156,11 +156,13 @@ double* sol_read(char* file, int mshDim, int mshNbrSol)
 
   if (!file) return NULL;
 
+
   double* sol = NULL;
 
   //--- set file name
   strcpy(InpFil, file);
   if (strstr(InpFil, ".sol")) {
+    printf(" %s ",InpFil);
     if (!(fsol = GmfOpenMesh(InpFil, GmfRead, &FilVer, &dim))) {
       return NULL;
     }
@@ -912,17 +914,17 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
   double ax1,ax2,ax3, K;
 
   int edge_case =1;
-
+  double* P1; double* P2; double* P3;
   while(in_trig ==0 && on_edge ==0)
   {
     compass =0;
     i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
-    double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
-    double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
-    double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
+    P1 = (double2d){Msh->Crd[i1][0], Msh->Crd[i1][1] };
+    P2 = (double2d){Msh->Crd[i2][0], Msh->Crd[i2][1] };
+    P3 = (double2d){Msh->Crd[i3][0], Msh->Crd[i3][1] };
     K =(surf(P1,P2,P3));
     ax1 = surf(Point,P2,P3)/K; ax2 = surf(P1,Point, P3)/K; ax3 = surf(P1,P2,Point)/K;
-
+    // printf("A triangle of surface %10f \ns", K);
     // printf("In the triangle %d, with neighbours (%d,%d,%d) the values are (%10f,%10f,%10f) \n",iTri,Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2],ax1,ax2,ax3);
     //check
     if(ax1<0 && (ax2<0 && ax3<0) ) printf("\n ERROR POINT OR TRIANGLE WRONGLY DEFINED, IGNORED \n");
@@ -933,6 +935,10 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
 
     // we could change the choice of the direction
     // here we have a bias against the direction 1 
+
+    if(fabs(ax1-1)<1e-30 && (fabs(ax2)<1e-30 && fabs(ax3)<1e-30) ) return NULL; // Point case
+    if(fabs(ax2-1)<1e-30 && (fabs(ax1)<1e-30 && fabs(ax3)<1e-30) ) return NULL; // Point case
+    if(fabs(ax3-1)<1e-30 && (fabs(ax1)<1e-30 && fabs(ax2)<1e-30) ) return NULL; // Point case
 
     if(fabs(ax1)<1e-30 && (ax2>0 && ax3>0)){ on_edge =1; edge_Tri = Msh->TriVoi[iTri][0]; compass =1;}
     if(fabs(ax2)<1e-30 && (ax1>0 && ax3>0)){ on_edge =1; edge_Tri = Msh->TriVoi[iTri][1]; compass =1;}
@@ -949,10 +955,14 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
     if(iTri == 0){edge_case +=1; iTri = edge_case;}
   }
 
+  // free(P1); P1=NULL;
+  // free(P2); P2=NULL;
+  // free(P3); P3=NULL;
+
   if(on_edge && iTri == 0){on_edge=0; iTri = edge_Tri; in_trig =1;}
   if(on_edge && edge_Tri == 0){on_edge=0; in_trig=1;}
-  if(on_edge) printf("The Point has been located on an edge between %d and %d \n", iTri,edge_Tri);
-  if(in_trig) printf("The Point has been located in triangle %d \n",iTri);
+  // if(on_edge) printf("The Point has been located on an edge between %d and %d \n", iTri,edge_Tri);
+  // if(in_trig) printf("The Point has been located in triangle %d \n",iTri);
 
   int* Result = (int*)calloc(4,sizeof(int));
   Result[0]= iTri; Result[1] = edge_Tri; Result[2]=in_trig; Result[3]=on_edge;
@@ -969,7 +979,10 @@ int* digging_a_hole(Mesh* Msh, double2d Point) //diggy diggy hole
 
   int id_tri,edge_Tri,in_trig,on_edge;
   int* Result= Localise_Tri(Msh, Point);
+  if(Result == NULL) return NULL;
   id_tri = Result[0]; edge_Tri = Result[1]; in_trig = Result[2]; on_edge = Result[3];
+
+  free(Result); Result = NULL;
 
   // calculting the elements to add to the cavity
   int i1,i2,i3;
@@ -1022,6 +1035,7 @@ int* digging_a_hole(Mesh* Msh, double2d Point) //diggy diggy hole
     }
   }
   
+  free(pile); pile =NULL;
   return cavity;
 }
 
@@ -1116,48 +1130,33 @@ int memory_allocation(Mesh* Msh)
   Msh->NbrTri = Msh->NbrTri - sizeof_cavity;
 
 
-  int3d* temp_Tri = realloc(Msh->Tri, (Msh->NbrTriMax+1  +security)*sizeof(int3d));
-  if (temp_Tri == NULL) {
+  Msh->Tri = realloc(Msh->Tri, (Msh->NbrTriMax+1  +security)*sizeof(int3d));
+  if (Msh->Tri == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory of Tri \n");
+    exit(0);
   }
-  else {
-    // If reallocation is successful
-    Msh->Tri = temp_Tri; 
-  } 
-  
-  
-  int1d* temp_Ref = realloc(Msh->TriRef, (Msh->NbrTriMax+1 +security)*sizeof(int1d));
-  if (temp_Ref == NULL) {
+
+  Msh->TriRef = realloc(Msh->TriRef, (Msh->NbrTriMax+1 +security)*sizeof(int1d));
+  if (Msh->TriRef == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory of Tri_Ref \n");
-  } 
-  else {
-    // If reallocation is successful
-    Msh->TriRef = temp_Ref; 
-  } 
+  }
 
-  int3d* temp_Voi = realloc(Msh->TriVoi, (Msh->NbrTriMax+1 +security)*sizeof(int3d));
-  if (temp_Voi == NULL) {
+  Msh->TriVoi = realloc(Msh->TriVoi, (Msh->NbrTriMax+1 +security)*sizeof(int3d));
+  if (Msh->TriVoi == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory of Tri_Voi \n");
   } 
-  else {
-    // If reallocation is successful
-    Msh->TriVoi = temp_Voi; 
-  } 
+
 
   Msh->NbrVer +=1; Msh->NbrVerMax +=1 ;
   
-  double2d* temp_crd = realloc(Msh->Crd , (Msh->NbrVerMax+1 +security)*sizeof(double2d));
-  if (temp_crd == NULL) {
+  Msh->Crd = realloc(Msh->Crd , (Msh->NbrVerMax+1 +security)*sizeof(double2d));
+  if (Msh->Crd == NULL) {
     // If reallocation fails
     printf("ERROR. Unable to resize memory of Crd \n");
   } 
-  else {
-    // If reallocation is successful
-    Msh->Crd = temp_crd;
-    } 
 
   return 0;
 }
@@ -1167,13 +1166,13 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
   int Tri_added, Tri_bound;
   int iVer1,iVer2,jVer1,jVer2;
   double surface;
+  double* P1 =Msh->Crd[1]; double* P2=Msh->Crd[1];
 
   // starring the point to the cavity's boundary
   for(int i_boundary=0; i_boundary<sizeof_boundary; i_boundary++)
   { 
     iVer1 = boundary[i_boundary][0]; 
     iVer2 = boundary[i_boundary][1]; 
-    double* P1; double* P2;
     P1 = Msh->Crd[iVer1]; P2 = Msh->Crd[iVer2];
 
     while( ((boundary[i_boundary][0]==0 || boundary[i_boundary][1]==0) && i_boundary<sizeof_boundary) || fabs(surf(P1,P2,Point)) <1e-30)
@@ -1184,7 +1183,6 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
     P1 = Msh->Crd[iVer1]; P2 = Msh->Crd[iVer2];
     
     if(i_boundary > sizeof_boundary) break;
-
     }
 
 
@@ -1196,7 +1194,6 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
     // add to Tri
     iVer1 = boundary[i_boundary][0]; 
     iVer2 = boundary[i_boundary][1]; 
-    // printf("Connecting the border of (%d,%d) to the point %d forming triangle : %d \n",iVer1,iVer2,Msh->NbrVer, Tri_added);
     surface = surf(Msh->Crd[iVer1],Msh->Crd[iVer2],Point);
     if(surface<0)
     {
@@ -1214,9 +1211,6 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
     Msh->TriRef[Tri_added] =1;
     Msh->TriVoi[Tri_added][0] =0; Msh->TriVoi[Tri_added][1] =0;
     }
-    
-    // printf("updating neighbours \n");
-    // printf("boundary neighbours \n");
 
     // linking the edge of the cavity to the outside
     Tri_bound = boundary[i_boundary][2];
@@ -1230,10 +1224,12 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
 
     sizeof_cavity -=1; Msh->NbrTri +=1;
   }
+  
+  // free(P1); P1 = NULL;
+  // free(P2); P2 = NULL;
 
   // updating the neighbours of the star using a quadratic algorithm.
   int iTri,jTri;
-  // int iVer3,jVer3;
   for(int i_boundary=0;i_boundary<sizeof_boundary;i_boundary++)
   {
     // or just stock it inside an array
@@ -1248,7 +1244,6 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
       
       jVer1 = Msh->Tri[jTri][tri2edg[2][0]];
       jVer2 = Msh->Tri[jTri][tri2edg[2][1]];
-      // printf("iTri : %d (%d,%d,%d); jTri : %d (%d,%d,%d) \n", iTri,iVer1,iVer2,iVer3   ,jTri,jVer1,jVer2,jVer3);
       if(iTri != jTri )
       {
       if(jVer2 == iVer1){ Msh->TriVoi[jTri][0] = iTri; Msh->TriVoi[iTri][1] = jTri; }
@@ -1256,11 +1251,7 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
       if(jVer1 == iVer1 || jVer2 == iVer2) printf("ERROR TRIANGLE NOT DEF CORRECTLY \n");
       }
     }
-    // Msh->TriVoi[iTri][2] = boundary[i_boundary][2];
-
   }
-  printf(" point starred \n");
-
   return 0;
 }
 
@@ -1269,10 +1260,11 @@ int ajout_point(Mesh* Msh, double2d Point)
   //TODO
   // add the case -> on vertex
   sizeof_cavity=0; sizeof_boundary =0;
-
-  printf("Adding a point of coord : (%5f, %5f)\n", Point[0],Point[1]);
+  // printf(" ------------------------------- \n");
+  // printf("Adding a point of coord : (%5f, %5f)\n", Point[0],Point[1]);
 
   int* cavity = digging_a_hole(Msh,Point);
+  if(cavity == NULL){ printf("point already there \n"); return 0;}
 
   // printf("The cavity of that point is of size %d and made up of \n",sizeof_cavity);
   // for(int i=0;i<sizeof_cavity;i++){printf("%d : (%d,%d,%d)\n", cavity[i],Msh->Tri[cavity[i]][0],Msh->Tri[cavity[i]][1],Msh->Tri[cavity[i]][2]);}
@@ -1285,14 +1277,18 @@ int ajout_point(Mesh* Msh, double2d Point)
   // for(int i=0;i<sizeof_boundary;i++){printf("%d : (%d,%d)\n",i ,boundary[i][0], boundary[i][1]);}
 
   memory_allocation(Msh);
+  // printf("Memory allocated \n");
   
   Msh->Crd[Msh->NbrVer][0] = Point[0];
   Msh->Crd[Msh->NbrVer][1] = Point[1];
 
   Starring_Point(Msh,cavity,boundary,Point);
+  // printf("Point starred \n");
 
-
-  return 0;
+  free(cavity);
+  free(boundary);
+  cavity =NULL; boundary =NULL;
+  return 1;
 }
 
 /// ------------------------------------------------------------
@@ -1380,7 +1376,43 @@ int Sort_Mesh(Mesh* Msh)
   return 0;
 }
 
+int Compression(Mesh* Msh, double* sol, int factor)
+{
+  srand(8);
+  msh_boundingbox(Msh);
 
+  Mesh* Msh_red = msh_read("../data/carre_base.mesh", 0);
+  double* sol_red = calloc(Msh->NbrVerMax+1,sizeof(double));
+
+  printf("bounding box : x (%10f,%10f), y (%10f,%10f) \n", Msh->Box[0],Msh->Box[1],Msh->Box[2],Msh->Box[3] );
+  
+  Msh_red->Crd[1][0] = Msh->Box[0]; Msh_red->Crd[1][1] = Msh->Box[2];
+  Msh_red->Crd[2][0] = Msh->Box[0]; Msh_red->Crd[2][1] = Msh->Box[3];
+  Msh_red->Crd[3][0] = Msh->Box[1]; Msh_red->Crd[3][1] = Msh->Box[2];
+  Msh_red->Crd[4][0] = Msh->Box[1]; Msh_red->Crd[4][1] = Msh->Box[3];
+
+  msh_neighbors(Msh_red);
+
+  int jVer=1, newpoint=0;
+  for(int iVer=1;iVer<Msh->NbrVer; iVer++) if((double)(rand())/RAND_MAX<1/(double)factor)
+    {
+      if(iVer%1000 ==0) printf("-------- work done %d/%d : %10f ------------ \n", iVer,Msh->NbrVer, (double)iVer/(double)Msh->NbrVer);
+
+      // printf(" adding a point \n");
+      newpoint =ajout_point(Msh_red, Msh->Crd[iVer]);
+
+      if(newpoint ==1 && sol !=NULL)
+      {
+      sol_red[jVer] = sol[iVer];
+      jVer+=1;
+      }
+    }
+  printf("Reduction done \n");
+  msh_write2dfield_Vertices("Compression.sol", Msh_red->NbrVer, sol_red);
+  msh_write(Msh_red,"Compression.mesh");
+  printf("Mesh written \n");
+  return 0;
+}
 
 // ============================================================================
 // ============================================================================
