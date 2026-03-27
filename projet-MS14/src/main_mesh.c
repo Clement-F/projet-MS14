@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
   double* sol =sol_read(file_sol,2,Msh->NbrVer);
 
   if(sol==NULL){printf(" sol void \n");};
-  Compression(Msh,sol,2);
+  Compression(Msh,sol,0.5);
 
   //================================================================================================
   //=============================         Exercice 3        ========================================

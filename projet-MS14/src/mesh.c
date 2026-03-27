@@ -903,28 +903,60 @@ int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3)
     return (d11*d22*d33 + d12*d23*d31 + d13*d21*d32 - d13*d22*d31 - d23*d32*d11 - d33*d12*d21 > 1e-10);
 }
 
+double* Coord_bary(double2d Point, Mesh* Msh, int iTri)
+{
+  
+  int i1,i2,i3;
+  double K;
+  
+  double* crd = calloc(3,sizeof(double)); crd[0]= 0; crd[1]=0; crd[2]=0;
+
+  double* P1; double* P2; double* P3;
+  i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
+  P1 = (double2d){Msh->Crd[i1][0], Msh->Crd[i1][1] };
+  P2 = (double2d){Msh->Crd[i2][0], Msh->Crd[i2][1] };
+  P3 = (double2d){Msh->Crd[i3][0], Msh->Crd[i3][1] };
+  K =(surf(P1,P2,P3));
+  crd[0] = surf(Point,P2,P3)/K; crd[1] = surf(P1,Point, P3)/K; crd[2] = surf(P1,P2,Point)/K;
+
+  
+  // free(P1); P1=NULL;
+  // free(P2); P2=NULL;
+  // free(P3); P3=NULL;
+
+  return crd;
+
+}
+
+// localise_Tri 
+// NULL                         if on point <-- CHANGED
+// iTri, edge_Tri, 0, on_edge;  if on edge 
+// iTri, 0, in_Trig, 0;         if in Tri
+
 int* Localise_Tri(Mesh* Msh, double2d Point)
 {
 
+  // printf(" --------------------------------- \n");
   int in_trig = 0; // 0 if in the triangle, 1 if it is. 
   int on_edge = 0; // 0 if not on edge, 1 if it is.
   int compass; // check if the north( direction ) has been chosen
   int iTri =1, edge_Tri=0;
-  int i1,i2,i3;
-  double ax1,ax2,ax3, K;
+  double ax1,ax2,ax3;
 
-  int edge_case =1;
-  double* P1; double* P2; double* P3;
+  // edge cases 
+
+  // naive non convex mesh
+  int edge_case =1;           
+
+  // Point is on Point;
+  int on_Point = 0; int Ver, jTri;
+  
   while(in_trig ==0 && on_edge ==0)
   {
     compass =0;
-    i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
-    P1 = (double2d){Msh->Crd[i1][0], Msh->Crd[i1][1] };
-    P2 = (double2d){Msh->Crd[i2][0], Msh->Crd[i2][1] };
-    P3 = (double2d){Msh->Crd[i3][0], Msh->Crd[i3][1] };
-    K =(surf(P1,P2,P3));
-    ax1 = surf(Point,P2,P3)/K; ax2 = surf(P1,Point, P3)/K; ax3 = surf(P1,P2,Point)/K;
-    // printf("A triangle of surface %10f \ns", K);
+    double* coord = Coord_bary(Point,Msh,iTri);
+    ax1 = coord[0]; ax2 = coord[1]; ax3= coord[2];
+
     // printf("In the triangle %d, with neighbours (%d,%d,%d) the values are (%10f,%10f,%10f) \n",iTri,Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2],ax1,ax2,ax3);
     //check
     if(ax1<0 && (ax2<0 && ax3<0) ) printf("\n ERROR POINT OR TRIANGLE WRONGLY DEFINED, IGNORED \n");
@@ -936,13 +968,13 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
     // we could change the choice of the direction
     // here we have a bias against the direction 1 
 
-    if(fabs(ax1-1)<1e-30 && (fabs(ax2)<1e-30 && fabs(ax3)<1e-30) ) return NULL; // Point case
-    if(fabs(ax2-1)<1e-30 && (fabs(ax1)<1e-30 && fabs(ax3)<1e-30) ) return NULL; // Point case
-    if(fabs(ax3-1)<1e-30 && (fabs(ax1)<1e-30 && fabs(ax2)<1e-30) ) return NULL; // Point case
+    if(fabs(ax1-1)<1e-30 && (fabs(ax2)<1e-30 && fabs(ax3)<1e-30) ){ on_Point=1; Ver=Msh->Tri[iTri][0]; break;} 
+    if(fabs(ax2-1)<1e-30 && (fabs(ax1)<1e-30 && fabs(ax3)<1e-30) ){ on_Point=1; Ver=Msh->Tri[iTri][1]; break;} 
+    if(fabs(ax3-1)<1e-30 && (fabs(ax1)<1e-30 && fabs(ax2)<1e-30) ){ on_Point=1; Ver=Msh->Tri[iTri][2]; break;}
 
-    if(fabs(ax1)<1e-30 && (ax2>0 && ax3>0)){ on_edge =1; edge_Tri = Msh->TriVoi[iTri][0]; compass =1;}
-    if(fabs(ax2)<1e-30 && (ax1>0 && ax3>0)){ on_edge =1; edge_Tri = Msh->TriVoi[iTri][1]; compass =1;}
-    if(fabs(ax3)<1e-30 && (ax1>0 && ax2>0)){ on_edge =1; edge_Tri = Msh->TriVoi[iTri][2]; compass =1;}
+    if(fabs(ax1)<1e-30 && (ax2>0 && ax3>0)){ on_edge =1; edge_Tri = Msh->TriVoi[iTri][0]; compass =1; break;}
+    if(fabs(ax2)<1e-30 && (ax1>0 && ax3>0)){ on_edge =1; edge_Tri = Msh->TriVoi[iTri][1]; compass =1; break;}
+    if(fabs(ax3)<1e-30 && (ax1>0 && ax2>0)){ on_edge =1; edge_Tri = Msh->TriVoi[iTri][2]; compass =1; break;}
 
     if(ax1<0 && compass ==0){ iTri = Msh->TriVoi[iTri][0]; compass =1;}
     if(ax2<0 && compass ==0){ iTri = Msh->TriVoi[iTri][1]; compass =1;}
@@ -953,19 +985,53 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
     if((ax1>0 && (ax2>0 && ax3>0)) && on_edge ==0 ){ in_trig=1;}
     
     if(iTri == 0){edge_case +=1; iTri = edge_case;}
+
   }
 
-  // free(P1); P1=NULL;
-  // free(P2); P2=NULL;
-  // free(P3); P3=NULL;
+  // returns an array of the triangle linked to the point
+  if(on_Point)
+  {
+    // printf(" ------ Ver : %d ----------- \n", Ver);
+    // return NULL;
+    int* domain = calloc(2+20,sizeof(int)); // how many triangle could a point possibly have ?
+    domain[0] =0; domain[1]=0;
+    for(int iEdg=0;iEdg<3;iEdg++) 
+    {
+      if(Msh->Tri[iTri][tri2edg[iEdg][0]] == Ver)       jTri = Msh->TriVoi[iTri][tri2edg[iEdg][1]]; 
+      else if (Msh->Tri[iTri][tri2edg[iEdg][1]] == Ver) jTri = Msh->TriVoi[iTri][tri2edg[iEdg][0]];
+    }
+    
+    // printf(" iTri : %d (%d,%d,%d) \n",iTri, Msh->Tri[iTri][0],  Msh->Tri[iTri][1],  Msh->Tri[iTri][2]);
+      
+    int sizeof_domain =2;
+    while((jTri != iTri && jTri !=0) && sizeof_domain<22 )
+    {
+      // printf(" jTri : %d (%d,%d,%d) \n",jTri, Msh->Tri[jTri][0],  Msh->Tri[jTri][1],  Msh->Tri[jTri][2]);
+      
+      for(int iEdg=0;iEdg<3;iEdg++) 
+      {
+        if(Msh->Tri[jTri][tri2edg[iEdg][0]] == Ver)       jTri = Msh->TriVoi[iTri][tri2edg[iEdg][1]]; 
+        else if (Msh->Tri[jTri][tri2edg[iEdg][1]] == Ver) jTri = Msh->TriVoi[iTri][tri2edg[iEdg][0]];
+      }
+      // printf(" to %d \n",jTri);
+      domain[sizeof_domain] = jTri; sizeof_domain++;
 
+    
+
+    }
+    return domain;
+  }
+
+  // border case 
   if(on_edge && iTri == 0){on_edge=0; iTri = edge_Tri; in_trig =1;}
   if(on_edge && edge_Tri == 0){on_edge=0; in_trig=1;}
+
   // if(on_edge) printf("The Point has been located on an edge between %d and %d \n", iTri,edge_Tri);
   // if(in_trig) printf("The Point has been located in triangle %d \n",iTri);
 
   int* Result = (int*)calloc(4,sizeof(int));
-  Result[0]= iTri; Result[1] = edge_Tri; Result[2]=in_trig; Result[3]=on_edge;
+  Result[0]= in_trig;   Result[1]= on_edge;
+  Result[2]= iTri;    Result[3] = edge_Tri;
 
   return Result;
 
@@ -979,8 +1045,11 @@ int* digging_a_hole(Mesh* Msh, double2d Point) //diggy diggy hole
 
   int id_tri,edge_Tri,in_trig,on_edge;
   int* Result= Localise_Tri(Msh, Point);
-  if(Result == NULL) return NULL;
-  id_tri = Result[0]; edge_Tri = Result[1]; in_trig = Result[2]; on_edge = Result[3];
+
+  if(Result == NULL || (Result[0]==0 && Result[1]==0)) return NULL;
+  in_trig = Result[0]; on_edge = Result[1];
+  id_tri = Result[2]; edge_Tri = Result[3]; 
+
 
   free(Result); Result = NULL;
 
@@ -1125,7 +1194,7 @@ int3d* boundary_hole(Mesh* Msh, int* cavity)
 
 int memory_allocation(Mesh* Msh)
 {
-  int security = 1;
+  int security = 0;
   Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary - sizeof_cavity ;
   Msh->NbrTri = Msh->NbrTri - sizeof_cavity;
 
@@ -1376,7 +1445,7 @@ int Sort_Mesh(Mesh* Msh)
   return 0;
 }
 
-int Compression(Mesh* Msh, double* sol, int factor)
+int Compression(Mesh* Msh, double* sol, double factor)
 {
   srand(8);
   msh_boundingbox(Msh);
@@ -1394,9 +1463,11 @@ int Compression(Mesh* Msh, double* sol, int factor)
   msh_neighbors(Msh_red);
 
   int jVer=1, newpoint=0;
-  for(int iVer=1;iVer<Msh->NbrVer; iVer++) if((double)(rand())/RAND_MAX<1/(double)factor)
+  for(int iVer=1;iVer<Msh->NbrVer; iVer++) 
+  {  if(iVer%1000 ==0) printf("-------- work done %d/%d : %10f ------------ \n", iVer,Msh->NbrVer, (double)iVer/(double)Msh->NbrVer);
+    if((double)(rand())/RAND_MAX<factor)
     {
-      if(iVer%1000 ==0) printf("-------- work done %d/%d : %10f ------------ \n", iVer,Msh->NbrVer, (double)iVer/(double)Msh->NbrVer);
+
 
       // printf(" adding a point \n");
       newpoint =ajout_point(Msh_red, Msh->Crd[iVer]);
@@ -1407,11 +1478,66 @@ int Compression(Mesh* Msh, double* sol, int factor)
       jVer+=1;
       }
     }
+  }
   printf("Reduction done \n");
   msh_write2dfield_Vertices("Compression.sol", Msh_red->NbrVer, sol_red);
   msh_write(Msh_red,"Compression.mesh");
+
+  double* sol_interpol = Interpol_sol(Msh,Msh_red,sol,sol_red);
+
+  // calcul qc : 
+  double qc=0;
+  for(int i=0;i<Msh->NbrVer;i++) qc+= fabs(sol_interpol[i]- sol[i]);
+  printf(" qc = %10f \n", qc/Msh->NbrVer);
+
+  msh_write(Msh,"Base_mesh.mesh");
+  msh_write2dfield_Vertices("Compressed_sol.sol", Msh->NbrVer, sol_interpol);
+
   printf("Mesh written \n");
   return 0;
+}
+
+double* Interpol_sol(Mesh* Msh, Mesh* Msh_red, double* sol, double* sol_red)
+{
+  int iTri;
+  double* Point; double* Crd;
+  double* sol_interpol = calloc(Msh->NbrVer , sizeof(double));
+  for(int iVer=1;iVer<Msh->NbrVer;iVer++)
+  {
+
+    Point = Msh->Crd[iVer];                   // take a point of the base mesh
+    int* Result =Localise_Tri(Msh_red,Point); // locate it in the compressed mesh
+
+    if((Result[0]!=0 && Result[1] !=0)&& Result != NULL) 
+    {
+      printf(" sol in triangle or edge \n");
+      iTri = Result[2];             
+      Crd = Coord_bary(Point,Msh_red,iTri);       
+      for(int i=0;i<3;i++)  sol_interpol[iVer] += Crd[i]*sol_red[Msh_red->Tri[iTri][i]];
+      
+      if(Result[1]!=0)
+      {
+        iTri = Result[3];             
+        Crd = Coord_bary(Point,Msh_red,iTri);   
+        for(int i=0;i<3;i++)  sol_interpol[iVer] += Crd[i]*sol_red[Msh_red->Tri[iTri][i]];
+      }
+
+    }
+
+    if((Result[0]==0 && Result[1] ==0)&& Result != NULL)
+    {
+      // printf(" sol on vertex ");
+      int Ver;
+      iTri= Result[2]; int jTri = Result[3];
+      // printf(" shared with %d and %d ",iTri,jTri);
+      for(int i=0;i<3;i++) for(int j=0;j<3;j++) if(Msh_red->Tri[iTri][i] == Msh_red->Tri[jTri][j]) Ver = Msh_red->Tri[iTri][i];
+      
+      sol_interpol[iVer] += sol_red[Ver];
+    }
+    
+    
+  }
+  return sol_interpol;
 }
 
 // ============================================================================
