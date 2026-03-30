@@ -10,12 +10,9 @@ int main(int argc, char* argv[])
     return 0;
   }
 
-  char* file = argv[1];
-  char* file_mesh = malloc(1+4+strlen(file)); strcpy(file_mesh,file); strcat(file_mesh,".mesh"); 
-  // char* file_sol = malloc(1+4+strlen(file)); strcpy(file_sol,file); strcat(file_sol,".sol"); 
   // --- read a mesh
   to        = clock();
-  Mesh* Msh = msh_read(file_mesh, 0);
+  Mesh* Msh = msh_read(argv[1], 1);
   ti        = clock();
 
   Mesh* Msh_Q = msh_read(argv[1], 1);
@@ -28,9 +25,9 @@ int main(int argc, char* argv[])
   printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   //--- create neigbhors Q2 version
-  // to = clock();
-  // msh_neighborsQ2(Msh_Q);
-  // ti = clock();
+  to = clock();
+  msh_neighborsQ2(Msh_Q);
+  ti = clock();
 
   printf("  time q2 neigh.        %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
@@ -44,6 +41,7 @@ int main(int argc, char* argv[])
   // --- check solution
   for(int tri_k=0;tri_k<Msh->NbrTri+1; tri_k++)
   {
+    printf(" i ");
     int Vois1 = Msh->TriVoi[tri_k][0]; int Vois2 = Msh->TriVoi[tri_k][1]; int Vois3 = Msh->TriVoi[tri_k][2];
     int Vois1_Q = Msh_Q->TriVoi[tri_k][0]; int Vois2_Q = Msh_Q->TriVoi[tri_k][1]; int Vois3_Q = Msh_Q->TriVoi[tri_k][2];
 
@@ -52,6 +50,7 @@ int main(int argc, char* argv[])
       printf(" ERROR NEIGHBOR AT %d \n", tri_k);
       printf(" Neighbors Q : %d, %d, %d \n", Vois1_Q, Vois2_Q, Vois3_Q);
       printf(" Neighbors : %d, %d, %d \n", Vois1, Vois2, Vois3);
+      return 0;
     } 
 
   }

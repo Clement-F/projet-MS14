@@ -332,22 +332,20 @@ int msh_neighbors(Mesh* Msh)
 
   if (!Msh) return 0;
 
-  // if(Msh->TriVoi !=NULL)
-  // {
-  //   free(Msh->TriVoi);
-  //   Msh->TriVoi =NULL;
-  // }
-
   if (Msh->TriVoi == NULL)
     Msh->TriVoi = calloc((Msh->NbrTri + 1), sizeof(int3d));
+
+  printf(" creating a neighbour list \n");
 
   //--- initialize HashTable and set the hash table
   int SizHead = 2*(Msh->NbrVerMax);
   int NbrMaxObj = Msh->NbrVerMax + Msh->NbrTriMax ; // Euler caracteristique with a bit of security
 
+  printf(" max : %d", Msh->NbrTri);
 
   HashTable* hsh = hash_init(SizHead, NbrMaxObj); 
   for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
+    printf(" \n a %d ",iTri);
     for (iEdg = 0; iEdg < 3; iEdg++) {
       iVer1 = Msh->Tri[iTri][tri2edg[iEdg][0]];
       iVer2 = Msh->Tri[iTri][tri2edg[iEdg][1]];
@@ -355,6 +353,7 @@ int msh_neighbors(Mesh* Msh)
       int j_hsh = hash_find(hsh,iVer1,iVer2);
       if(j_hsh !=0)
       {
+        printf("complete ");
         hash_add(hsh,iVer1,iVer2,iTri,j_hsh);
         jTri = hsh->LstObj[j_hsh][2];
         Msh->TriVoi[iTri][iEdg] = jTri;
@@ -368,11 +367,13 @@ int msh_neighbors(Mesh* Msh)
       }
       if(j_hsh ==0)
       {
+        printf("add ");
         hash_add(hsh,iVer1,iVer2,iTri,0);
       }
 
     }
   }
+  printf(" end ");
 
   free(hsh);
   hsh = NULL;
@@ -1230,7 +1231,6 @@ int memory_allocation_start(Mesh* Msh, int esti_Ver, int esti_Tri)
 int memory_allocation_point(Mesh* Msh)
 {
 
-  printf(" Memory reallocation \n ");
   int security =0;
   Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary - sizeof_cavity ;
   Msh->NbrTri = Msh->NbrTri - sizeof_cavity;
@@ -1395,6 +1395,7 @@ Mesh* Maillage_Delaunay(int Nb_Point, Mesh* Msh)
 
   double Crd_x,Crd_y;
   msh_neighbors(Msh);
+
   for(int it=0;it<=Nb_Point;it++)
   {
     printf("------------ adding point %d to the mesh ----------- \n",it+1);
