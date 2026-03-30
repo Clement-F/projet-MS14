@@ -75,7 +75,7 @@ Mesh* msh_read(char* file, int readEfr)
     }
   }
 
-  printf(" File %s opened Dimension %d Version %d \n", InpFil, Msh->Dim, FilVer);
+  //printf(" File %s opened Dimension %d Version %d \n", InpFil, Msh->Dim, FilVer);
 
   Msh->NbrVer = GmfStatKwd(fmsh, GmfVertices);
   Msh->NbrTri = GmfStatKwd(fmsh, GmfTriangles);
@@ -178,29 +178,29 @@ double* sol_read(char* file, int mshDim, int mshNbrSol)
     }
   }
 
-  printf(" File %s opened Dimension %d Version %d \n", InpFil, dim, FilVer);
+  //printf(" File %s opened Dimension %d Version %d \n", InpFil, dim, FilVer);
 
   SolTyp = GmfSolAtVertices; // read only sol at vertices
   nbrSol = GmfStatKwd(fsol, SolTyp, &NbrTyp, &SolSiz, TypTab);
 
   if (nbrSol == 0) {
-    printf("  ## WARNING: No SolAtVertices in the solution file !\n");
+    //printf("  ## WARNING: No SolAtVertices in the solution file !\n");
     return NULL;
   }
   if (dim != mshDim) {
-    printf("  ## WARNING: WRONG DIMENSION NUMBER. IGNORED\n");
+    //printf("  ## WARNING: WRONG DIMENSION NUMBER. IGNORED\n");
     return NULL;
   }
   if (nbrSol != mshNbrSol) {
-    printf("  ## WARNING: WRONG SOLUTION NUMBER. IGNORED\n");
+    //printf("  ## WARNING: WRONG SOLUTION NUMBER. IGNORED\n");
     return NULL;
   }
   if (NbrTyp != 1) {
-    printf("  ## WARNING: WRONG FIELD NUMBER. IGNORED\n");
+    //printf("  ## WARNING: WRONG FIELD NUMBER. IGNORED\n");
     return NULL;
   }
   if (TypTab[0] != GmfSca) {
-    printf("  ## WARNING: WRONG FIELD TYPE. IGNORED\n");
+    //printf("  ## WARNING: WRONG FIELD TYPE. IGNORED\n");
     return NULL;
   }
 
@@ -253,7 +253,7 @@ int msh_write(Mesh* Msh, char* file)
 
   int fmsh = GmfOpenMesh(file, GmfWrite, FilVer, Msh->Dim);
   if (fmsh <= 0) {
-    printf("  ## ERROR: CANNOT CREATE FILE \n");
+    //printf("  ## ERROR: CANNOT CREATE FILE \n");
     return 0;
   }
 
@@ -289,7 +289,8 @@ int msh_neighborsQ2(Mesh* Msh)
   to = clock();  
   //--- Compute the neighbors using a quadratic-complexity algorithm
   for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
-    if(iTri%5000 == 0){ ti = clock();   printf("--- task %d / %d full --- %lg (s) passed \n",iTri,Msh->NbrTri,(ti-to)/ CLOCKS_PER_SEC );}
+    if(iTri%5000 == 0){ ti = clock();   //printf("--- task %d / %d full --- %lg (s) passed \n",iTri,Msh->NbrTri,(ti-to)/ CLOCKS_PER_SEC );
+      }
     for (iEdg = 0; iEdg < 3; iEdg++) {
       if(Msh->TriVoi[iTri][iEdg] !=0){ continue;}
       iVer1 = Msh->Tri[iTri][tri2edg[iEdg][0]];
@@ -316,7 +317,7 @@ int msh_neighborsQ2(Mesh* Msh)
   }
   
   // for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
-  // printf("Trivoi of %d : %d, %d, %d \n", iTri, Msh->TriVoi[iTri][0], Msh->TriVoi[iTri][1], Msh->TriVoi[iTri][2]);
+  // //printf("Trivoi of %d : %d, %d, %d \n", iTri, Msh->TriVoi[iTri][0], Msh->TriVoi[iTri][1], Msh->TriVoi[iTri][2]);
   // }
 
   return 1;
@@ -403,13 +404,13 @@ int hash_find(HashTable* hsh, int iVer1, int iVer2)
   int n = 0; // security
   while(j_hsh!=0 && n<hsh->NbrMaxObj)
   {
-    // printf("searching element %d if it has Vert (%d,%d) \n",j_hsh,iVer1,iVer2);
+    // //printf("searching element %d if it has Vert (%d,%d) \n",j_hsh,iVer1,iVer2);
     if(hsh->LstObj[j_hsh][0]==iVer1 && hsh->LstObj[j_hsh][1]==iVer2){return j_hsh;}
     else{ if(hsh->LstObj[j_hsh][1]==iVer1 && hsh->LstObj[j_hsh][0]==iVer2){return j_hsh;}
           else {j_hsh = hsh->LstObj[j_hsh][4];}
     }
   }
-  // printf("j_hsh = 0 \n");
+  // //printf("j_hsh = 0 \n");
   return 0;
 
 }
@@ -423,8 +424,8 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
 
   if(i_hsh==0)
   {
-    if(hsh->NbrObj> hsh->NbrMaxObj+1) printf("  ## WARNING: HSH ELEMENT ALREADY FULL. IGNORED\n");
-    // printf("adding element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", hsh->NbrObj, iVer1,iVer2, iTri, hsh->LstObj[hsh->NbrObj][3], hsh->LstObj[hsh->NbrObj][4]);
+    if(hsh->NbrObj> hsh->NbrMaxObj+1) //printf("  ## WARNING: HSH ELEMENT ALREADY FULL. IGNORED\n");
+    // //printf("adding element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", hsh->NbrObj, iVer1,iVer2, iTri, hsh->LstObj[hsh->NbrObj][3], hsh->LstObj[hsh->NbrObj][4]);
 
     hsh->LstObj[hsh->NbrObj +1][0] = iVer1;
     hsh->LstObj[hsh->NbrObj +1][1] = iVer2;
@@ -452,9 +453,12 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
   int i_hsh;
   i_hsh = hash_find(hsh,iVer1,iVer2); // check if the element is in the hash_list
 
-  if(i_hsh ==0){ printf("\n DELETING A NON EXISTING ELEMENT, IGNORED \n ");}
+  if(i_hsh ==0){ printf("\n DELETING A NON EXISTING ELEMENT, IGNORED \n ");
+    }
   if(i_hsh !=0)
   {
+    printf(" Deleting element %d : (%d,%d) linked to %d",i_hsh, iVer1,iVer2, iTri);
+    printf(" Deleting element %d : (%d,%d) linked to %d",i_hsh, hsh->LstObj[i_hsh][0],hsh->LstObj[i_hsh][1], hsh->LstObj[i_hsh][2]);
     int ToDelete=0;
     if((hsh->LstObj[i_hsh][2]!=0 && hsh->LstObj[i_hsh][3]==0) || (hsh->LstObj[i_hsh][3]!=0 && hsh->LstObj[i_hsh][2]==0)) ToDelete = 1;
     
@@ -555,15 +559,15 @@ int hash_bound(HashTable* hsh)
 
   for(int i_hsh=1; i_hsh <= hsh->NbrObj; i_hsh++ )
   {  
-    // printf("Triangles : %d, %d ", hsh->LstObj[i_hsh][2], hsh->LstObj[i_hsh][3]);
+    // //printf("Triangles : %d, %d ", hsh->LstObj[i_hsh][2], hsh->LstObj[i_hsh][3]);
     if(hsh->LstObj[i_hsh][3] == 0)
     {      
-      // printf(" : edge ");
+      // //printf(" : edge ");
       Nb_bound +=1;
     }
-    // printf(" \n ======= \n");
+    // //printf(" \n ======= \n");
   }
-  printf("Number of boundary edges : %d \n", Nb_bound);
+  //printf("Number of boundary edges : %d \n", Nb_bound);
   return 0;
 }
 
@@ -667,7 +671,7 @@ int msh_write2dfield_Vertices(char* file, int nfield, double* field)
 
   int fmsh = GmfOpenMesh(file, GmfWrite, GmfDouble, 2);
   if (fmsh <= 0) {
-    printf("  ## ERROR: CANNOT CREATE FILE \n");
+    //printf("  ## ERROR: CANNOT CREATE FILE \n");
     return 0;
   }
 
@@ -690,7 +694,7 @@ int msh_write2dfield_Triangles(char* file, int nfield, double* field)
 
   int fmsh = GmfOpenMesh(file, GmfWrite, GmfDouble, 2);
   if (fmsh <= 0) {
-    printf("  ## ERROR: CANNOT CREATE FILE \n");
+    //printf("  ## ERROR: CANNOT CREATE FILE \n");
     return 0;
   }
 
@@ -713,7 +717,7 @@ int msh_write2dmetric(char* file, int nmetric, double3d* metric)
 
   int fmsh = GmfOpenMesh(file, GmfWrite, GmfDouble, 2);
   if (fmsh <= 0) {
-    printf("  ## ERROR: CANNOT CREATE FILE \n");
+    //printf("  ## ERROR: CANNOT CREATE FILE \n");
     return 0;
   }
 
@@ -755,10 +759,10 @@ int valid_edge(Mesh* Msh, int iTri, int iEdg)
 
 double* connex_comp(Mesh* Msh)
 {
-  printf("creating neighbors list of the mesh \n");
+  //printf("creating neighbors list of the mesh \n");
   msh_neighbors(Msh) ;
-  printf("neighbors list of the mesh done \n");
-  printf("creating connex composante of the mesh \n");
+  //printf("neighbors list of the mesh done \n");
+  //printf("creating connex composante of the mesh \n");
 
   // init
   double* color_trig = calloc(Msh->NbrTri +1, sizeof(double)); // stored color of the triangles
@@ -816,7 +820,7 @@ double* connex_comp(Mesh* Msh)
     color ++;
     for(int trig_ = 1; trig_<Msh->NbrTri; trig_ ++){ if(color_trig[trig_]==0){id_last_seed = trig_; break;}}
   }
-  printf("sub domains created. there is %d sub domaines \n",color-1);
+  //printf("sub domains created. there is %d sub domaines \n",color-1);
   return color_trig;
 }
 
@@ -961,7 +965,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
 
     // printf("In the triangle %d, with neighbours (%d,%d,%d) the values are (%10f,%10f,%10f) \n",iTri,Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2],ax1,ax2,ax3);
     //check
-    if(ax1<0 && (ax2<0 && ax3<0) ) printf("\n ERROR POINT OR TRIANGLE WRONGLY DEFINED, IGNORED \n");
+    if(ax1<0 && (ax2<0 && ax3<0) ) //printf("\n ERROR POINT OR TRIANGLE WRONGLY DEFINED, IGNORED \n");
 
     // 3 direct neighbours
     // printf(" from the directions available : (%d,%d,%d) \n", Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2]);
