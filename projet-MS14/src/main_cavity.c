@@ -13,7 +13,11 @@ int main(int argc, char* argv[])
   Mesh* Msh = msh_read(argv[1], 0);
   ti        = clock();
 
+<<<<<<< HEAD
   Msh = Maillage_Delaunay(500,Msh);
+=======
+  Msh = Maillage_Delaunay(1000,Msh);
+>>>>>>> tryout
   msh_neighbors(Msh);
   
   printf(" Mesh created \n");

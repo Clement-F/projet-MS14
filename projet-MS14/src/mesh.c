@@ -957,10 +957,13 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
 
   // Point is on Point;
   int on_Point = 0; int Ver=0, jTri=0;
-  
+  Msh->TriMrk[0]+=1;
   while(in_trig ==0 && on_edge ==0)
   {
     compass =0;
+    while(Msh->TriMrk[iTri] == Msh->TriMrk[0]+1){ printf(" (%d,%d) no you don't \n",Msh->TriMrk[iTri],Msh->TriMrk[0]);iTri = edge_case; edge_case+=1;}
+    if(iTri !=0)
+      Msh->TriMrk[iTri]= Msh->TriMrk[0]+1;
     double* coord = Coord_bary(Point,Msh,iTri);
     ax1 = coord[0]; ax2 = coord[1]; ax3= coord[2];
 
@@ -991,7 +994,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
 
     if((ax1>0 && (ax2>0 && ax3>0)) && on_edge ==0 ){ in_trig=1;}
     
-    if(iTri == 0){edge_case +=1; iTri = edge_case;}
+    if(iTri == 0 && Msh->TriMrk[iTri] == Msh->TriMrk[0]+1){edge_case +=1; iTri = edge_case;}
 
   }
 
@@ -1255,6 +1258,12 @@ int memory_allocation_point(Mesh* Msh)
     printf("ERROR. Unable to resize memory of Tri_Voi \n");
   } 
 
+  Msh->TriMrk = realloc(Msh->TriMrk, (Msh->NbrTriMax+1 +security)*sizeof(int3d));
+  if (Msh->TriMrk == NULL) {
+    // If reallocation fails
+    printf("ERROR. Unable to resize memory of Tri_Voi \n");
+  } 
+
   Msh->NbrVer +=1; Msh->NbrVerMax +=1 ;
   
   Msh->Crd = realloc(Msh->Crd , (Msh->NbrVerMax+1 +security)*sizeof(double2d));
@@ -1395,6 +1404,7 @@ Mesh* Maillage_Delaunay(int Nb_Point, Mesh* Msh)
 
   double Crd_x,Crd_y;
   msh_neighbors(Msh);
+  Msh->TriMrk[0]=0;
 
   for(int it=0;it<=Nb_Point;it++)
   {
