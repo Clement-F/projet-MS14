@@ -742,7 +742,8 @@ int valid_edge(Mesh* Msh, int iTri, int iEdg)
   iVer1 = Msh->Tri[iTri][tri2edg[iEdg][0]];
   iVer2 = Msh->Tri[iTri][tri2edg[iEdg][1]];
 
-  for (jEdg = 0; jEdg < Msh->NbrEfrMax; jEdg++) {
+  for (jEdg = 0; jEdg < Msh->NbrEfrMax; jEdg++)  // NbrEfrMax <- non def
+  {
     jVer1 = Msh->Efr[jEdg][0];
     jVer2 = Msh->Efr[jEdg][1];
 
@@ -772,6 +773,7 @@ double* connex_comp(Mesh* Msh)
   id_last_seed = 1;
 
   int trig_ring;
+
 
   printf("starting the loop on sub domains \n");
   while(id_last_seed<Msh->NbrTri && nbr_colored<Msh->NbrTri  ) // loop on subdomains
@@ -949,7 +951,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
   int edge_case =1;           
 
   // Point is on Point;
-  int on_Point = 0; int Ver, jTri;
+  int on_Point = 0; int Ver=0, jTri=0;
   
   while(in_trig ==0 && on_edge ==0)
   {
@@ -1116,17 +1118,12 @@ int deleting_Cavity(Mesh* Msh, int* cavity)  // deleting the elements of the cav
   for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
   {
     Tri_cavity = cavity[i_cavity];
-    // printf("Deleting triangle %d from the mesh \n",Tri_cavity);
-    //----------------------------------------------------------------------------------
     // deleting it from it's neighbours's list of neighbours
     for(int i=0; i<3; i++)
     {
       Tri_neigh =Msh->TriVoi[Tri_cavity][i];// check all neighbours 
-      for(int j=0; j<3; j++)
-      {
-        // printf(" checking neighbours %d",Tri_neigh)
+      for(int j=0; j<3; j++)      
         if(Msh->TriVoi[Tri_neigh][j]==Tri_cavity) Msh->TriVoi[Tri_neigh][j] = 0; // removing it from their neighbours
-      }
     } 
   } 
 
@@ -1138,24 +1135,24 @@ int3d* boundary_hole(Mesh* Msh, int* cavity)
   int3d* boundary_cavity; 
   boundary_cavity = calloc((Msh->NbrTri+ Msh->NbrVer) +1 , sizeof(int3d));
 
-  int Is_In_Cavity=0;
+  int Is_On_Boundary=0;
   int iVer1,iVer2;
 
-  for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)
+  for(int i_cavity=0; i_cavity<sizeof_cavity; i_cavity ++)  // on check tout les triangles de la cavité
   {
-    for(int i_Edg=0;i_Edg<3;i_Edg++)
+    for(int i_Edg=0;i_Edg<3;i_Edg++)                        // toutes les arrêtes
     {
       iVer1 = Msh->Tri[cavity[i_cavity]][tri2edg[i_Edg][0]];
       iVer2 = Msh->Tri[cavity[i_cavity]][tri2edg[i_Edg][1]];
       // i_obj=hash_find(Msh->Hsh,iVer1,iVer2);
-      Is_In_Cavity =0;
+      Is_On_Boundary =0;
 
-      for(int i=0;i<sizeof_boundary;i++) 
+      for(int i=0;i<sizeof_boundary;i++)                    // On regarde  
       {
         if((boundary_cavity[i][0] ==iVer1 && boundary_cavity[i][1]==iVer2 ) || (boundary_cavity[i][1] ==iVer1 && boundary_cavity[i][0]==iVer2) )
         { 
           // if it is in the boundary -> remove it  
-          Is_In_Cavity= 1;
+          Is_On_Boundary= 1;
           boundary_cavity[i][0]=boundary_cavity[sizeof_boundary][0];
           boundary_cavity[i][1]=boundary_cavity[sizeof_boundary][1];
           boundary_cavity[i][2]=boundary_cavity[sizeof_boundary][2];
@@ -1165,7 +1162,7 @@ int3d* boundary_hole(Mesh* Msh, int* cavity)
       }     
         
       // if it is not in the boundary -> adding it
-      if(Is_In_Cavity==0)
+      if(Is_On_Boundary==0)
       {
       boundary_cavity[sizeof_boundary][0]=iVer1;
       boundary_cavity[sizeof_boundary][1]=iVer2;
@@ -1179,7 +1176,7 @@ int3d* boundary_hole(Mesh* Msh, int* cavity)
   int NumOfZero=0;
   for(int i =0;i<sizeof_boundary-NumOfZero;i++)
   {
-    if(boundary_cavity[i][0]==0 || boundary_cavity[i][0] ==NULL)
+    if(boundary_cavity[i][0]==0)
     {
       boundary_cavity[i][0] = boundary_cavity[sizeof_boundary-NumOfZero-1][0];  boundary_cavity[sizeof_boundary-NumOfZero-1][0]=0;
       boundary_cavity[i][1] = boundary_cavity[sizeof_boundary-NumOfZero-1][1];  boundary_cavity[sizeof_boundary-NumOfZero-1][1]=0;
@@ -1192,9 +1189,45 @@ int3d* boundary_hole(Mesh* Msh, int* cavity)
   return boundary_cavity;
 }
 
-int memory_allocation(Mesh* Msh)
+int memory_allocation_start(Mesh* Msh, int esti_Ver, int esti_Tri)
 {
-  int security = 0;
+  int security = 1;
+  Msh->NbrTriMax = Msh->NbrTri + esti_Tri;
+  Msh->NbrVerMax = Msh->NbrVer + esti_Ver;
+
+  Msh->Tri = realloc(Msh->Tri, (Msh->NbrTriMax+1  +security)*sizeof(int3d));
+  if (Msh->Tri == NULL) {
+    // If reallocation fails
+    printf("ERROR. Unable to resize memory of Tri \n");
+    exit(0);
+  }
+  
+  Msh->TriRef = realloc(Msh->TriRef, (Msh->NbrTriMax+1 +security)*sizeof(int1d));
+  if (Msh->TriRef == NULL) {
+    // If reallocation fails
+    printf("ERROR. Unable to resize memory of Tri_Ref \n");
+  }
+
+  Msh->TriVoi = realloc(Msh->TriVoi, (Msh->NbrTriMax+1 +security)*sizeof(int3d));
+  if (Msh->TriVoi == NULL) {
+    // If reallocation fails
+    printf("ERROR. Unable to resize memory of Tri_Voi \n");
+  } 
+  
+  Msh->Crd = realloc(Msh->Crd , (Msh->NbrVerMax+1 +security)*sizeof(double2d));
+  if (Msh->Crd == NULL) {
+    // If reallocation fails
+    printf("ERROR. Unable to resize memory of Crd \n");
+  } 
+
+  return 0;
+}
+
+int memory_allocation_point(Mesh* Msh)
+{
+
+  printf(" Memory reallocation \n ");
+  int security =0;
   Msh->NbrTriMax = Msh->NbrTriMax + sizeof_boundary - sizeof_cavity ;
   Msh->NbrTri = Msh->NbrTri - sizeof_cavity;
 
@@ -1217,7 +1250,6 @@ int memory_allocation(Mesh* Msh)
     // If reallocation fails
     printf("ERROR. Unable to resize memory of Tri_Voi \n");
   } 
-
 
   Msh->NbrVer +=1; Msh->NbrVerMax +=1 ;
   
@@ -1326,33 +1358,23 @@ int Starring_Point(Mesh* Msh, int* cavity, int3d* boundary, double2d Point)
 
 int ajout_point(Mesh* Msh, double2d Point)
 {
-  //TODO
-  // add the case -> on vertex
   sizeof_cavity=0; sizeof_boundary =0;
-  // printf(" ------------------------------- \n");
-  // printf("Adding a point of coord : (%5f, %5f)\n", Point[0],Point[1]);
 
   int* cavity = digging_a_hole(Msh,Point);
   if(cavity == NULL){ printf("point already there \n"); return 0;}
-
-  // printf("The cavity of that point is of size %d and made up of \n",sizeof_cavity);
-  // for(int i=0;i<sizeof_cavity;i++){printf("%d : (%d,%d,%d)\n", cavity[i],Msh->Tri[cavity[i]][0],Msh->Tri[cavity[i]][1],Msh->Tri[cavity[i]][2]);}
 
   deleting_Cavity(Msh,cavity);
 
   int3d* boundary = boundary_hole(Msh, cavity);
   
-  // printf("The boundary of that cavity is of size %d and made up of \n",sizeof_boundary);
-  // for(int i=0;i<sizeof_boundary;i++){printf("%d : (%d,%d)\n",i ,boundary[i][0], boundary[i][1]);}
 
-  memory_allocation(Msh);
-  // printf("Memory allocated \n");
+  // if((Msh->NbrTri + sizeof_boundary - sizeof_cavity +1> Msh->NbrTriMax ) || (Msh->NbrVer +1 > Msh->NbrVerMax))
+  memory_allocation_point(Msh);
   
   Msh->Crd[Msh->NbrVer][0] = Point[0];
   Msh->Crd[Msh->NbrVer][1] = Point[1];
 
   Starring_Point(Msh,cavity,boundary,Point);
-  // printf("Point starred \n");
 
   free(cavity);
   free(boundary);
@@ -1362,9 +1384,9 @@ int ajout_point(Mesh* Msh, double2d Point)
 
 /// ------------------------------------------------------------
 
-Mesh* Maillage_Delauney(int Nb_Point, Mesh* Msh)
+Mesh* Maillage_Delaunay(int Nb_Point, Mesh* Msh)
 {
-  printf("Creating a Mesh based on Delauney method \n");
+  printf("Creating a Mesh based on Delaunay method \n");
   srand(10);
 
   double Crd_x,Crd_y;
@@ -1404,7 +1426,7 @@ Mesh* Maillage_Delauney(int Nb_Point, Mesh* Msh)
   printf(" mesh completed \n");
   
 
-  msh_write(Msh,"Delauney.mesh");
+  msh_write(Msh,"Delaunay.mesh");
   return Msh;
   }
 
@@ -1467,8 +1489,6 @@ int Compression(Mesh* Msh, double* sol, double factor)
   {  if(iVer%1000 ==0) printf("-------- work done %d/%d : %10f ------------ \n", iVer,Msh->NbrVer, (double)iVer/(double)Msh->NbrVer);
     if((double)(rand())/RAND_MAX<factor)
     {
-
-
       // printf(" adding a point \n");
       newpoint =ajout_point(Msh_red, Msh->Crd[iVer]);
 
@@ -1480,6 +1500,7 @@ int Compression(Mesh* Msh, double* sol, double factor)
     }
   }
   printf("Reduction done \n");
+  // output mesh compressed and rough sol
   msh_write2dfield_Vertices("Compression.sol", Msh_red->NbrVer, sol_red);
   msh_write(Msh_red,"Compression.mesh");
 
@@ -1490,6 +1511,7 @@ int Compression(Mesh* Msh, double* sol, double factor)
   for(int i=0;i<Msh->NbrVer;i++) qc+= fabs(sol_interpol[i]- sol[i]);
   printf(" qc = %10f \n", qc/Msh->NbrVer);
 
+  // output mesh base et interpole
   msh_write(Msh,"Base_mesh.mesh");
   msh_write2dfield_Vertices("Compressed_sol.sol", Msh->NbrVer, sol_interpol);
 
@@ -1527,7 +1549,7 @@ double* Interpol_sol(Mesh* Msh, Mesh* Msh_red, double* sol, double* sol_red)
     if((Result[0]==0 && Result[1] ==0)&& Result != NULL)
     {
       // printf(" sol on vertex ");
-      int Ver;
+      int Ver=0;
       iTri= Result[2]; int jTri = Result[3];
       // printf(" shared with %d and %d ",iTri,jTri);
       for(int i=0;i<3;i++) for(int j=0;j<3;j++) if(Msh_red->Tri[iTri][i] == Msh_red->Tri[jTri][j]) Ver = Msh_red->Tri[iTri][i];

@@ -123,7 +123,7 @@ int ajout_point(Mesh* Msh, double2d Point);
 int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3);
 int hash_out_index(HashTable* hsh, int index);  // print the element of the table
 
-Mesh* Maillage_Delauney(int Nb_Point,Mesh* Msh);
+Mesh* Maillage_Delaunay(int Nb_Point,Mesh* Msh);
 int Mesh_out(Mesh* Msh);
 int Compression(Mesh* Msh, double* sol, double factor);
 double* Interpol_sol(Mesh* Msh, Mesh* Msh_red, double* sol, double* sol_red);

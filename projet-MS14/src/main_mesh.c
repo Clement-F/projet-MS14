@@ -12,154 +12,81 @@ int main(int argc, char* argv[])
 
   char* file = argv[1];
   char* file_mesh = malloc(1+4+strlen(file)); strcpy(file_mesh,file); strcat(file_mesh,".mesh"); 
-  char* file_sol = malloc(1+4+strlen(file)); strcpy(file_sol,file); strcat(file_sol,".sol"); 
+  // char* file_sol = malloc(1+4+strlen(file)); strcpy(file_sol,file); strcat(file_sol,".sol"); 
   // --- read a mesh
   to        = clock();
   Mesh* Msh = msh_read(file_mesh, 0);
   ti        = clock();
 
-  // Mesh* Msh_Q = msh_read(argv[1], 1);
+  Mesh* Msh_Q = msh_read(argv[1], 1);
 
-  // if (!Msh)
-  //   return 0;
+  if (!Msh)
+    return 0;
 
-  // printf("  Vertices   %10d \n", Msh->NbrVer);
-  // printf("  Triangles  %10d \n", Msh->NbrTri);
-  // printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+  printf("  Vertices   %10d \n", Msh->NbrVer);
+  printf("  Triangles  %10d \n", Msh->NbrTri);
+  printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
-  // //--- create neigbhors Q2 version
-  // // to = clock();
-  // // msh_neighborsQ2(Msh_Q);
-  // // ti = clock();
-
-  // printf("  time q2 neigh.        %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
-
-  // //--- create neigbhors with hash table
+  //--- create neigbhors Q2 version
   // to = clock();
-  // msh_neighbors(Msh);
+  // msh_neighborsQ2(Msh_Q);
   // ti = clock();
 
-  // printf("  time hash tab neigh.  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+  printf("  time q2 neigh.        %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+
+  //--- create neigbhors with hash table
+  to = clock();
+  msh_neighbors(Msh);
+  ti = clock();
+
+  printf("  time hash tab neigh.  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   // --- check solution
-  // for(int tri_k=0;tri_k<Msh->NbrTri+1; tri_k++)
-  // {
-  //   int Vois1 = Msh->TriVoi[tri_k][0]; int Vois2 = Msh->TriVoi[tri_k][1]; int Vois3 = Msh->TriVoi[tri_k][2];
-  //   int Vois1_Q = Msh_Q->TriVoi[tri_k][0]; int Vois2_Q = Msh_Q->TriVoi[tri_k][1]; int Vois3_Q = Msh_Q->TriVoi[tri_k][2];
+  for(int tri_k=0;tri_k<Msh->NbrTri+1; tri_k++)
+  {
+    int Vois1 = Msh->TriVoi[tri_k][0]; int Vois2 = Msh->TriVoi[tri_k][1]; int Vois3 = Msh->TriVoi[tri_k][2];
+    int Vois1_Q = Msh_Q->TriVoi[tri_k][0]; int Vois2_Q = Msh_Q->TriVoi[tri_k][1]; int Vois3_Q = Msh_Q->TriVoi[tri_k][2];
 
-  //   if(!((Vois1 == Vois1_Q && Vois2 == Vois2_Q) && Vois3 == Vois3_Q))
-  //   {
-  //     printf(" ERROR NEIGHBOR AT %d \n", tri_k);
-  //     printf(" Neighbors Q : %d, %d, %d \n", Vois1_Q, Vois2_Q, Vois3_Q);
-  //     printf(" Neighbors : %d, %d, %d \n", Vois1, Vois2, Vois3);
-  //   } 
+    if(!((Vois1 == Vois1_Q && Vois2 == Vois2_Q) && Vois3 == Vois3_Q))
+    {
+      printf(" ERROR NEIGHBOR AT %d \n", tri_k);
+      printf(" Neighbors Q : %d, %d, %d \n", Vois1_Q, Vois2_Q, Vois3_Q);
+      printf(" Neighbors : %d, %d, %d \n", Vois1, Vois2, Vois3);
+    } 
 
-  // }
+  }
 
 
-  // printf("Quality evaluation :\n");
-  // to = clock();
-  // double* Qal = (double*)malloc(sizeof(double) * (Msh->NbrTri + 1));
+  printf("Quality evaluation :\n");
+  to = clock();
+  double* Qal = (double*)malloc(sizeof(double) * (Msh->NbrTri + 1));
 
-  // int i1,i2,i3;
+  int i1,i2,i3;
 
-  // for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
-  // // printf("calc %d \n",iTri);
-  // i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
-  // double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
-  // double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
-  // double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
-  // Qal[iTri] = quality(P1,P2,P3);
-  // }
+  for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
+  // printf("calc %d \n",iTri);
+  i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
+  double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
+  double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
+  double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
+  Qal[iTri] = quality(P1,P2,P3);
+  }
 
-  // msh_write2dfield_Triangles("quality.sol", Msh->NbrTri, Qal);
-  // ti = clock();
-  // printf("quality evaluated in  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+  msh_write2dfield_Triangles("quality.sol", Msh->NbrTri, Qal);
+  ti = clock();
+  printf("quality evaluated in  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   
-  //================================================================================================
-  //=================================         TP2        ===========================================
-  //================================================================================================
-  // Msh = Maillage_Delauney(10000,Msh);
-  // msh_neighbors(Msh);
-  
-  // printf(" Mesh created \n");
-  // // --- check solution
-  // int iVer1,iVer2,iTri1,iTri2;
-  // int jel;
-  // for(int hsh_el=1;hsh_el<Msh->Hsh->NbrObj; hsh_el ++)
-  // {
-  //   iVer1 = Msh->Hsh->LstObj[hsh_el][0];  iVer2 = Msh->Hsh->LstObj[hsh_el][1];
-  //   iTri1 = Msh->Hsh->LstObj[hsh_el][2];  iTri2 = Msh->Hsh->LstObj[hsh_el][3];
-
-  //   jel =hash_find(hsh_1,iVer1,iVer2);
-  //   if(jel ==0) printf("l'arrete (%d,%d) n'appartient pas a la table de hash genere \n", iVer1,iVer2);
-  //   if(jel !=0 && ((iTri1 != hsh_1->LstObj[jel][2] && iTri2 != hsh_1->LstObj[jel][3]) && (iTri1 != hsh_1->LstObj[jel][3] && iTri2 != hsh_1->LstObj[jel][2])))
-  //   {printf("l'arrete (%d,%d) n'est pas connecte au bon triangle (%d,%d) mais a (%d,%d)  \n",iVer1,iVer2,iTri1,iTri2, hsh_1->LstObj[jel][2], hsh_1->LstObj[jel][3]); } 
-  // }
-  // printf(" Mesh checked \n");
-
-
-
-  // printf("Quality evaluation :\n");
-  // to = clock();
-  // double* Qal = (double*)malloc(sizeof(double) * (Msh->NbrTri + 1));
-
-  // int i1,i2,i3;
-
-  // for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
-  // // printf("calc %d \n",iTri);
-  // i1 = Msh->Tri[iTri][0];        i2 = Msh->Tri[iTri][1];        i3 = Msh->Tri[iTri][2];
-  // double2d P1 = {Msh->Crd[i1][0], Msh->Crd[i1][1] };
-  // double2d P2 = {Msh->Crd[i2][0], Msh->Crd[i2][1] };
-  // double2d P3 = {Msh->Crd[i3][0], Msh->Crd[i3][1] };
-  // Qal[iTri] = quality(P1,P2,P3);
-  // }
-  // msh_write2dfield_Triangles("quality.sol", Msh->NbrTri, Qal);
-  // ti = clock();
-  // printf("quality evaluated in  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
-
-  // --------------------------------- COMPRESSION ----------------------------------
- 
-  printf("filename : %s \n",file_sol);
-  double* sol =sol_read(file_sol,2,Msh->NbrVer);
-
-  if(sol==NULL){printf(" sol void \n");};
-  Compression(Msh,sol,0.5);
-
-  //================================================================================================
-  //=============================         Exercice 3        ========================================
-  //================================================================================================
-
-  // double* color = calloc((Msh->NbrTri+1),sizeof(double));
-
-  // color = (connex_comp(Msh));
-  // // for(int i=0; i<Msh->NbrTri+1; i++){printf("color of element %d : %f \n",i,color[i]);}
-  // msh_write2dfield_Triangles("color.sol", Msh->NbrTri, color);
-
-  //--- TODO: compute metric field
-  // double3d* Met = (double3d*)malloc(sizeof(double3d) * (Msh->NbrVer + 1));
-
-  // for (iVer = 1; iVer <= Msh->NbrVer; iVer++) {
-  //   Met[iVer][0] = 1.;
-  //   Met[iVer][1] = 0.;
-  //   Met[iVer][2] = 1.;
-  // }
-
   // msh_write2dmetric("metric.sol", Msh->NbrVer, Met);
 
-  // //--- Free memory
-  // if (Qal != NULL) {
-  //   free(Qal);
-  //   Qal = NULL;
-  // }
+  //--- Free memory
+  if (Qal != NULL) {
+    free(Qal);
+    Qal = NULL;
+  }
   // if (Met != NULL) {
   //   free(Met);
   //   Met = NULL;
-  // }
-  // if (color !=NULL){
-  //   free(color);
-  //   color = NULL;
   // }
 
   return 0;
