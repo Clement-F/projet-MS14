@@ -10,12 +10,9 @@ int main(int argc, char* argv[])
     return 0;
   }
 
-  char* file = argv[1];
-  char* file_mesh = malloc(1+4+strlen(file)); strcpy(file_mesh,file); strcat(file_mesh,".mesh"); 
-  // char* file_sol = malloc(1+4+strlen(file)); strcpy(file_sol,file); strcat(file_sol,".sol"); 
   // --- read a mesh
   to        = clock();
-  Mesh* Msh = msh_read(file_mesh, 0);
+  Mesh* Msh = msh_read(argv[1], 0);
   ti        = clock();
 
   Mesh* Msh_Q = msh_read(argv[1], 1);
@@ -28,9 +25,9 @@ int main(int argc, char* argv[])
   printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   //--- create neigbhors Q2 version
-  // to = clock();
-  // msh_neighborsQ2(Msh_Q);
-  // ti = clock();
+  to = clock();
+  msh_neighborsQ2(Msh_Q);
+  ti = clock();
 
   printf("  time q2 neigh.        %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 

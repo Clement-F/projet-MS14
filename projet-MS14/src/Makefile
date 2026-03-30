@@ -2,9 +2,6 @@
 CC=gcc
 COPTS= -O2 -Wall
 
-# -------------------------- TP1 ---------------
-mesh:	mesh.o main_mesh.o eigen.o libmesh6.o  
-	$(CC) $(COPTS) -o mesh mesh.o  main_mesh.o eigen.o libmesh6.o -lm
 
 libmesh6.o :	libmesh6.c libmesh6.h 
 	$(CC) -c $(COPTS)  -I. libmesh6.c  
@@ -14,6 +11,11 @@ mesh.o :	mesh.c mesh.h libmesh6.h
 
 eigen.o :	eigen.c mesh.h 
 	$(CC) -c $(COPTS)  -I. eigen.c
+
+
+# -------------------------- TP1 ---------------
+mesh:	mesh.o main_mesh.o eigen.o libmesh6.o  
+	$(CC) $(COPTS) -o mesh mesh.o  main_mesh.o eigen.o libmesh6.o -lm
 
 main_mesh.o :	main_mesh.c mesh.h
 	$(CC) -c $(COPTS)  -I. main_mesh.c  
@@ -26,10 +28,10 @@ domain: mesh.o main_domain.o eigen.o libmesh6.o
 main_domain.o :	main_domain.c mesh.h
 	$(CC) -c $(COPTS)  -I. main_domain.c  
 # ------------------------- TP2 delauney ---------------- 
-main_cavity.o :	main_cavity.c mesh.h
+cavity.o :	main_cavity.c mesh.h
 	$(CC) -c $(COPTS)  -I. main_cavity.c 
 
-cavity:	mesh.o main_cavity.o eigen.o libmesh6.o  
+cavity:	mesh.o cavity.o eigen.o libmesh6.o  
 	$(CC) $(COPTS) -o cavity mesh.o  main_cavity.o eigen.o libmesh6.o -lm 
 
 # ------------------------- TP2 compression -------------
