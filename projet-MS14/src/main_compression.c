@@ -26,20 +26,24 @@ int main(int argc, char* argv[])
   printf("filename : %s \n",file_sol);
   double* sol =sol_read(file_sol,2,Msh->NbrVer);
 
-  Image Raw_image= {Msh,sol};
+  Image* Raw_image = Imag_init();
+  Raw_image->Msh = Msh;
+  Raw_image->Sol = sol;
 
   if(sol==NULL){printf(" sol void \n");};
-  Image Comp_image = Compression_alea(&Raw_image,0.9);
-  
-  printf("  Vertices   %10d \n", Msh->NbrVer);
-  printf("  Triangles  %10d \n", Msh->NbrTri);
-  printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+
+  to        = clock();
+  Image* Comp_image = Compression(Raw_image);
+  ti        = clock();
+
+  printf("  Vertices   %10d \n", Raw_image->Msh->NbrVer);
+  printf("  Triangles  %10d \n", Raw_image->Msh->NbrTri);
+  printf("  time to create the compression %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   
   // output mesh compressed and rough sol
-  msh_write2dfield_Vertices("Compression.sol", Comp_image.Msh->NbrVer, Comp_image.Sol);
-  msh_write(Comp_image.Msh,"Compression.mesh");
-
+  msh_write2dfield_Vertices("Compression.sol", Comp_image->Msh->NbrVer, Comp_image->Sol);
+  msh_write(Comp_image->Msh,"Compression.mesh");
 
   return 0;
 }

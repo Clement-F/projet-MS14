@@ -132,11 +132,16 @@ typedef struct Image {
   double* Sol;
 } Image;
 
+Image* Imag_init();
+
 // -----------------
 
-Image Compression_alea(Image* Raw_image, double factor);
-int Compression_step(Image* Raw_image, Image* Comp_image);
+Image* Compression_alea(Image* Raw_image, double factor);
+Image* Compression_step(Image* Raw_image, Image* Comp_image);
+Image* Compression(Image* Raw_image);
+int Projection(Image* Raw_image, Image* Comp_image);
 double* Interpol_sol(Image* Raw_image, Image* Comp_image);
+double quad_mean(Image* Raw_image, Image* Comp_image);
 
 // ------------------
 

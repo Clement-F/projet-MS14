@@ -956,7 +956,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
     double* coord = Coord_bary(Point,Msh,iTri);
     ax1 = coord[0]; ax2 = coord[1]; ax3= coord[2];
 
-    // printf("In the triangle %d, with neighbours (%d,%d,%d) the values are (%10f,%10f,%10f) \n",iTri,Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2],ax1,ax2,ax3);
+    printf("In the triangle %d, with neighbours (%d,%d,%d) the values are (%10f,%10f,%10f) \n",iTri,Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2],ax1,ax2,ax3);
     //check
     if(ax1<0 && (ax2<0 && ax3<0) ) printf("\n ERROR POINT OR TRIANGLE WRONGLY DEFINED, IGNORED \n");
 
@@ -990,7 +990,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
   // returns an array of the triangle linked to the point
   if(on_Point)
   {
-    // printf(" ------ Ver : %d ----------- \n", Ver);
+    printf(" ------ Ver : %d ----------- \n", Ver);
     // return NULL;
     int* domain = calloc(2+20,sizeof(int)); // how many triangle could a point possibly have ?
     domain[0] =0; domain[1]=0;
@@ -1385,6 +1385,7 @@ int ajout_point(Mesh* Msh, double2d Point)
 }
 
 /// ------------------------------------------------------------
+/// ------------------------------------------------------------
 
 Mesh* Maillage_Delaunay(int Nb_Point, Mesh* Msh)
 {
@@ -1471,7 +1472,21 @@ int Sort_Mesh(Mesh* Msh)
   return 0;
 }
 
-Image Compression_alea(Image* Raw_image, double factor)
+
+
+/// ------------------------------------------------------------
+/// ------------------------------------------------------------
+
+Image* Imag_init()
+{
+ Image* Imag =  malloc(sizeof(Image));
+ Imag->Msh =NULL;
+ Imag->Sol =NULL;
+ return Imag;
+}
+
+
+Image* Compression_alea(Image* Raw_image, double factor)
 {
   srand(8);
 
@@ -1510,24 +1525,19 @@ Image Compression_alea(Image* Raw_image, double factor)
   printf("Reduction done \n");
   // output mesh compressed and rough sol
 
-  Image Comp_image = {Msh_red,sol_red};
-
-  double* sol_interpol = Interpol_sol(Raw_image,&Comp_image);
-
-  // calcul qc : 
-  double qc=0;
-  for(int i=0;i<Msh->NbrVer;i++) qc+= fabs(sol_interpol[i]- sol[i]);
-  printf(" qc = %10f \n", qc/Msh->NbrVer);
-
+  Image* Comp_image = Imag_init();
+  Comp_image->Msh = Msh_red;
+  Comp_image->Sol = sol_red;
+  quad_mean(Raw_image,Comp_image);
 
   printf("Mesh written \n");
   return Comp_image;
 }
 
-
-int Compression_step(Image* Raw_image, Image* Comp_image)
+Image* Compression_step(Image* Raw_image, Image* Comp_image)
 {
   srand(8);
+  printf(" a new step to the compression of an image \n");
   
   msh_boundingbox(Raw_image->Msh);
   msh_boundingbox(Comp_image->Msh);
@@ -1535,7 +1545,12 @@ int Compression_step(Image* Raw_image, Image* Comp_image)
   msh_neighbors(Raw_image->Msh);
   msh_neighbors(Comp_image->Msh);
 
+  printf(" bounds of the mesh found  ");
+
   double* sol_interpol = Interpol_sol(Raw_image,Comp_image);
+
+  printf(" interpolation of the sol calculated \n");
+
   double max_diff = 0, temp_diff=0;
   int Ver_insert=0; 
 
@@ -1559,7 +1574,40 @@ int Compression_step(Image* Raw_image, Image* Comp_image)
     Comp_image->Sol[Ver_insert] = Raw_image->Sol[Ver_insert];       
   }
 
-  return 0;
+  return Comp_image;
+}
+
+Image* Compression(Image* Raw_image)
+{
+  printf("\n ======================================================= \n \n");
+  printf("                    Compressing image \n");
+  printf("\n ======================================================= \n \n");
+
+  Mesh* Msh       = Raw_image->Msh;
+  double* sol     = Raw_image->Sol;
+
+  msh_boundingbox(Msh);
+  msh_neighbors(Msh);
+
+  Mesh* Msh_red = msh_read("../data/carre_base.mesh", 0);
+  double* sol_red = calloc(Msh->NbrVerMax+1,sizeof(double));
+  printf("Reduction mesh and sol allocated \n");
+
+  Image* Comp_image =Imag_init();
+  Comp_image->Msh= Msh_red;
+  Comp_image->Sol= sol_red;
+
+  Projection(Raw_image, Comp_image);
+
+  double qc = quad_mean(Raw_image, Comp_image);
+  printf(" quadratic mean : %10f \n", qc);
+  while(qc>10)
+  {
+    printf(" adding a new point \n");
+    Comp_image= Compression_step(Raw_image,Comp_image);
+    qc = quad_mean(Raw_image, Comp_image);
+  }
+  return Comp_image;
 }
 
 double* Interpol_sol(Image* Raw_image, Image* Comp_image)
@@ -1611,7 +1659,47 @@ double* Interpol_sol(Image* Raw_image, Image* Comp_image)
   return sol_interpol;
 }
 
+int Projection(Image* Raw_image, Image* Comp_image)
+{
+  int iTri;
+  double* Point;
 
+  Mesh* Msh = Raw_image->Msh;
+
+  msh_neighbors(Msh);
+
+  printf(" Projection of a sol \n");
+
+  for(int iVer=1;iVer<Comp_image->Msh->NbrVer; iVer++)
+  {
+    printf(" finding the sol of point (%10f,%10f) ", Comp_image->Msh->Crd[iVer][0], Comp_image->Msh->Crd[iVer][1]);
+    Point = Comp_image->Msh->Crd[iVer];                   // take a point of the base mesh
+    int* Result =Localise_Tri(Msh,Point);     // locate it in the compressed mesh
+    printf(" point located in the raw mesh \n");
+    if((Result[0]==0 && Result[1] ==0)&& Result != NULL)
+    {
+      printf(" sol on vertex ");
+      int Ver=0;
+      iTri= Result[2]; int jTri = Result[3];
+      // printf(" shared with %d and %d ",iTri,jTri);
+      for(int i=0;i<3;i++) for(int j=0;j<3;j++) if(Comp_image->Msh->Tri[iTri][i] == Comp_image->Msh->Tri[jTri][j]) Ver = Comp_image->Msh->Tri[iTri][i];
+      
+      Comp_image->Sol[iVer] = Raw_image->Sol[Ver];
+    }
+  }
+}
+
+double quad_mean(Image* Raw_image, Image* Comp_image){
+  
+  double* sol_interpol= Interpol_sol(Raw_image, Comp_image);
+
+  // calcul qc : 
+  double qc=0;
+  for(int i=0;i<Raw_image->Msh->NbrVer;i++) qc+= fabs(sol_interpol[i]- Raw_image->Sol[i]);
+  printf(" qc = %10f \n", qc/Raw_image->Msh->NbrVer);
+
+  return qc;
+}
 
 // ============================================================================
 // ============================================================================
