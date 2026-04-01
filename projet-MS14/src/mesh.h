@@ -125,5 +125,18 @@ int hash_out_index(HashTable* hsh, int index);  // print the element of the tabl
 
 Mesh* Maillage_Delaunay(int Nb_Point,Mesh* Msh);
 int Mesh_out(Mesh* Msh);
-int Compression(Mesh* Msh, double* sol, double factor);
-double* Interpol_sol(Mesh* Msh, Mesh* Msh_red, double* sol, double* sol_red);
+
+
+typedef struct Image {
+  Mesh* Msh;
+  double* Sol;
+} Image;
+
+// -----------------
+
+Image Compression_alea(Image* Raw_image, double factor);
+int Compression_step(Image* Raw_image, Image* Comp_image);
+double* Interpol_sol(Image* Raw_image, Image* Comp_image);
+
+// ------------------
+

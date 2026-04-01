@@ -1471,9 +1471,13 @@ int Sort_Mesh(Mesh* Msh)
   return 0;
 }
 
-int Compression(Mesh* Msh, double* sol, double factor)
+Image Compression_alea(Image* Raw_image, double factor)
 {
   srand(8);
+
+  Mesh* Msh       = Raw_image->Msh;
+  double* sol     = Raw_image->Sol;
+
   msh_boundingbox(Msh);
 
   Mesh* Msh_red = msh_read("../data/carre_base.mesh", 0);
@@ -1505,28 +1509,69 @@ int Compression(Mesh* Msh, double* sol, double factor)
   }
   printf("Reduction done \n");
   // output mesh compressed and rough sol
-  msh_write2dfield_Vertices("Compression.sol", Msh_red->NbrVer, sol_red);
-  msh_write(Msh_red,"Compression.mesh");
 
-  double* sol_interpol = Interpol_sol(Msh,Msh_red,sol,sol_red);
+  Image Comp_image = {Msh_red,sol_red};
+
+  double* sol_interpol = Interpol_sol(Raw_image,&Comp_image);
 
   // calcul qc : 
   double qc=0;
   for(int i=0;i<Msh->NbrVer;i++) qc+= fabs(sol_interpol[i]- sol[i]);
   printf(" qc = %10f \n", qc/Msh->NbrVer);
 
-  // output mesh base et interpole
-  msh_write(Msh,"Base_mesh.mesh");
-  msh_write2dfield_Vertices("Compressed_sol.sol", Msh->NbrVer, sol_interpol);
 
   printf("Mesh written \n");
+  return Comp_image;
+}
+
+
+int Compression_step(Image* Raw_image, Image* Comp_image)
+{
+  srand(8);
+  
+  msh_boundingbox(Raw_image->Msh);
+  msh_boundingbox(Comp_image->Msh);
+
+  msh_neighbors(Raw_image->Msh);
+  msh_neighbors(Comp_image->Msh);
+
+  double* sol_interpol = Interpol_sol(Raw_image,Comp_image);
+  double max_diff = 0, temp_diff=0;
+  int Ver_insert=0; 
+
+  for(int iVer=1;iVer<Raw_image->Msh->NbrVerMax;iVer++)
+  {
+    temp_diff = fabs(sol_interpol[iVer]-Raw_image->Sol[iVer]);  // mm point ??
+    printf(" point in mesh : %d (%10f,%10f,%10f);   %d (%10f,%10f,%10f) \n",  iVer, Raw_image->Msh->Crd[iVer][0], Raw_image->Msh->Crd[iVer][1], Raw_image->Msh->Crd[iVer][2], 
+                                                                              iVer, Comp_image->Msh->Crd[iVer][0],Comp_image->Msh->Crd[iVer][1],Comp_image->Msh->Crd[iVer][2] );
+    if(temp_diff>max_diff)
+    {
+      max_diff = temp_diff;
+      Ver_insert = iVer;
+    } 
+  }
+
+  if(Ver_insert !=0)
+  {
+    ajout_point(Comp_image->Msh,Raw_image->Msh->Crd[Ver_insert]);
+
+    Comp_image->Sol =realloc( Comp_image->Sol, (Raw_image->Msh->NbrVer * sizeof(double)));  
+    Comp_image->Sol[Ver_insert] = Raw_image->Sol[Ver_insert];       
+  }
+
   return 0;
 }
 
-double* Interpol_sol(Mesh* Msh, Mesh* Msh_red, double* sol, double* sol_red)
+double* Interpol_sol(Image* Raw_image, Image* Comp_image)
 {
   int iTri;
   double* Point; double* Crd;
+
+  Mesh* Msh       = Raw_image->Msh;
+  Mesh* Msh_red   = Comp_image->Msh;
+  double* sol     = Raw_image->Sol;
+  double* sol_red = Comp_image->Sol;
+
   double* sol_interpol = calloc(Msh->NbrVer , sizeof(double));
   for(int iVer=1;iVer<Msh->NbrVer;iVer++)
   {
@@ -1566,5 +1611,8 @@ double* Interpol_sol(Mesh* Msh, Mesh* Msh_red, double* sol, double* sol_red)
   return sol_interpol;
 }
 
+
+
 // ============================================================================
 // ============================================================================
+

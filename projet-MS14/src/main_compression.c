@@ -17,14 +17,29 @@ int main(int argc, char* argv[])
   to        = clock();
   Mesh* Msh = msh_read(file_mesh, 0);
   ti        = clock();
+  
+  printf("  Vertices   %10d \n", Msh->NbrVer);
+  printf("  Triangles  %10d \n", Msh->NbrTri);
+  printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   
   printf("filename : %s \n",file_sol);
   double* sol =sol_read(file_sol,2,Msh->NbrVer);
 
+  Image Raw_image= {Msh,sol};
+
   if(sol==NULL){printf(" sol void \n");};
-  Compression(Msh,sol,0.5);
+  Image Comp_image = Compression_alea(&Raw_image,0.9);
+  
+  printf("  Vertices   %10d \n", Msh->NbrVer);
+  printf("  Triangles  %10d \n", Msh->NbrTri);
+  printf("  time to read the mesh %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
   
+  // output mesh compressed and rough sol
+  msh_write2dfield_Vertices("Compression.sol", Comp_image.Msh->NbrVer, Comp_image.Sol);
+  msh_write(Comp_image.Msh,"Compression.mesh");
+
+
   return 0;
 }
