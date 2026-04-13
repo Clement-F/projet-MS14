@@ -144,4 +144,6 @@ double* Interpol_sol(Image* Raw_image, Image* Comp_image);
 double quad_mean(Image* Raw_image, Image* Comp_image);
 
 // ------------------
-
+double* grad_tri(Mesh* Msh,double* u, int Tri);
+double* grad_ver(Mesh* Msh,double* u, int iVer);
+double** grad_mesh(Mesh* Msh,double* u);

@@ -13,34 +13,50 @@ eigen.o :	eigen.c mesh.h
 	$(CC) -c $(COPTS)  -I. eigen.c
 
 
-# -------------------------- TP1 ---------------
+# -------------------------- TP1 			---------------
 mesh:	mesh.o main_mesh.o eigen.o libmesh6.o  
 	$(CC) $(COPTS) -o mesh mesh.o  main_mesh.o eigen.o libmesh6.o -lm
 
 main_mesh.o :	main_mesh.c mesh.h
 	$(CC) -c $(COPTS)  -I. main_mesh.c  
 
-# ------------------------- TP1 ex3 ----------------
+# ------------------------- TP1 ex3 		----------------
 
 domain: mesh.o main_domain.o eigen.o libmesh6.o  
 	$(CC) $(COPTS) -o domain mesh.o  main_domain.o eigen.o libmesh6.o -lm
 
 main_domain.o :	main_domain.c mesh.h
 	$(CC) -c $(COPTS)  -I. main_domain.c  
-# ------------------------- TP2 delauney ---------------- 
+# ------------------------- TP2 creation	----------------- 
 cavity.o :	main_cavity.c mesh.h
 	$(CC) -c $(COPTS)  -I. main_cavity.c 
 
 cavity:	mesh.o cavity.o eigen.o libmesh6.o  
 	$(CC) $(COPTS) -o cavity mesh.o  main_cavity.o eigen.o libmesh6.o -lm 
 
-# ------------------------- TP2 compression -------------
+# ------------------------- TP2 compression	-------------
 
 compression: mesh.o main_compression.o eigen.o libmesh6.o  
 	$(CC) $(COPTS) -o compression mesh.o  main_compression.o eigen.o libmesh6.o -lm 
 	
 main_compression.o :	main_compression.c mesh.h
 	$(CC) -c $(COPTS)  -I. main_compression.c 
+
+# -------------------------	TP3 adapatation	----------------------------
+
+adapt: mesh.o main_adaptative.o eigen.o libmesh6.o
+	$(CC) $(COPTS) -o adapt mesh.o  main_adaptative.o eigen.o libmesh6.o -lm 
+
+
+main_adapt.o :	main_adaptative.c mesh.h
+	$(CC) -c $(COPTS)  -I. main_adaptative.c 
+
+# -------------------------	Test			--------------------------------
+
+test: mesh.o test.o eigen.o libmesh6.o  
+	$(CC) $(COPTS) -o test mesh.o  test.o eigen.o libmesh6.o -lm 
+test.o : test.c mesh.h
+	$(CC) -c $(COPTS)  -I. test.c 
 
 # ------------------------------------------------------
 

@@ -25,25 +25,19 @@ int main(int argc, char* argv[])
   
   printf("filename : %s \n",file_sol);
   double* sol =sol_read(file_sol,2,Msh->NbrVer);
+  printf("sol recovered \n");
 
-  Image* Raw_image = Imag_init();
-  Raw_image->Msh = Msh;
-  Raw_image->Sol = sol;
+  double** gradu =grad_mesh(Msh,sol);
 
-  if(sol==NULL){printf(" sol void \n");};
+  printf(" gradient calculated \n");
 
-  to        = clock();
-  Image* Comp_image = Compression_alea(Raw_image,0.2);
-  ti        = clock();
+  double* gradu_x = calloc(Msh->NbrVer,sizeof(double));
+//   double* gradu_y = calloc(Msh->NbrVer,sizeof(double));
 
-  printf("  Vertices   %10d \n", Raw_image->Msh->NbrVer);
-  printf("  Triangles  %10d \n", Raw_image->Msh->NbrTri);
-  printf("  time to create the compression %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
+  for(int i=1;i<Msh->NbrVer;i++){ gradu_x[i] =gradu[i][0]; }
 
   
-  // output mesh compressed and rough sol
-  msh_write2dfield_Vertices("Compression.sol", Comp_image->Msh->NbrVer, Comp_image->Sol);
-  msh_write(Comp_image->Msh,"Compression.mesh");
+  msh_write2dfield_Vertices("Compression.sol", Msh->NbrVer, gradu_x);
 
   return 0;
 }

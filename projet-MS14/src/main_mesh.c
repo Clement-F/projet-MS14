@@ -38,22 +38,6 @@ int main(int argc, char* argv[])
 
   printf("  time hash tab neigh.  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
-  // --- check solution
-  for(int tri_k=0;tri_k<Msh->NbrTri+1; tri_k++)
-  {
-    printf(" i ");
-    int Vois1 = Msh->TriVoi[tri_k][0]; int Vois2 = Msh->TriVoi[tri_k][1]; int Vois3 = Msh->TriVoi[tri_k][2];
-    int Vois1_Q = Msh_Q->TriVoi[tri_k][0]; int Vois2_Q = Msh_Q->TriVoi[tri_k][1]; int Vois3_Q = Msh_Q->TriVoi[tri_k][2];
-
-    if(!((Vois1 == Vois1_Q && Vois2 == Vois2_Q) && Vois3 == Vois3_Q))
-    {
-      printf(" ERROR NEIGHBOR AT %d \n", tri_k);
-      printf(" Neighbors Q : %d, %d, %d \n", Vois1_Q, Vois2_Q, Vois3_Q);
-      printf(" Neighbors : %d, %d, %d \n", Vois1, Vois2, Vois3);
-      return 0;
-    } 
-
-  }
 
 
   printf("Quality evaluation :\n");

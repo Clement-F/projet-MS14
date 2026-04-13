@@ -336,7 +336,7 @@ int msh_neighbors(Mesh* Msh)
 
   //--- initialize HashTable and set the hash table
   int SizHead = 2*(Msh->NbrVerMax);
-  int NbrMaxObj = Msh->NbrVerMax + Msh->NbrTriMax ; // Euler caracteristique with a bit of security
+  int NbrMaxObj = Msh->NbrVerMax + Msh->NbrTriMax ; // Euler caracteristique
 
 
   HashTable* hsh = hash_init(SizHead, NbrMaxObj); 
@@ -367,9 +367,9 @@ int msh_neighbors(Mesh* Msh)
     }
   }
 
-  free(hsh);
-  hsh = NULL;
-  // Msh->Hsh = hsh;
+  // free(hsh);
+  // hsh = NULL;
+  Msh->Hsh = hsh;
   return 1;
 }
 
@@ -392,20 +392,25 @@ HashTable* hash_init(int SizHead, int NbrMaxObj)
 
 int hash_find(HashTable* hsh, int iVer1, int iVer2)
 {
+  if(iVer1==0 ||iVer2==0){printf("\n error : looking up a null point \n"); return 0;}
+
+  if(iVer1== hsh->NbrMaxObj +1 ||iVer2== hsh->NbrMaxObj +1){
+      printf("\n error : looking up a point over the limit \n"); return 0;}
+
   int key = iVer1 + iVer2;
   int j_hsh = hsh->Head[key];
+  int i1=0,i2=0;
   int n = 0; // security
   while(j_hsh!=0 && n<hsh->NbrMaxObj)
   {
+    i1 = hsh->LstObj[j_hsh][0];
+    i2 = hsh->LstObj[j_hsh][1];
     // printf("searching element %d if it has Vert (%d,%d) \n",j_hsh,iVer1,iVer2);
-    if(hsh->LstObj[j_hsh][0]==iVer1 && hsh->LstObj[j_hsh][1]==iVer2){return j_hsh;}
-    else{ if(hsh->LstObj[j_hsh][1]==iVer1 && hsh->LstObj[j_hsh][0]==iVer2){return j_hsh;}
-          else {j_hsh = hsh->LstObj[j_hsh][4];}
-    }
+    if((i1 ==iVer1 && i2 == iVer2) || (i1 == iVer2 && i2 == iVer1)){return j_hsh;}
+    else {j_hsh = hsh->LstObj[j_hsh][4];}
+    
   }
-  // printf("j_hsh = 0 \n");
   return 0;
-
 }
 
 int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
@@ -413,9 +418,10 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
 
   // i_hsh is a initial guess. it should be 0 by default, 
   // but if you have already run hash_find, you can bypass the find to imput the element at i_hsh
+
   if(i_hsh==0)  i_hsh = hash_find(hsh,iVer1,iVer2); // check if the element isn't in the hash_list already
 
-  if(i_hsh==0)
+  if(i_hsh==0)  // if the element wasn't found
   {
     if(hsh->NbrObj> hsh->NbrMaxObj+1) printf("  ## WARNING: HSH ELEMENT ALREADY FULL. IGNORED\n");
     // printf("adding element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", hsh->NbrObj, iVer1,iVer2, iTri, hsh->LstObj[hsh->NbrObj][3], hsh->LstObj[hsh->NbrObj][4]);
@@ -430,11 +436,13 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
     
   }
 
-  if(i_hsh !=0)
+  if(i_hsh !=0) // if the element was found
   { 
-    if(hsh->LstObj[i_hsh][3] ==0){hsh->LstObj[i_hsh][3] = iTri;} 
-    else printf(" ## WARNING: HSH ELEMENT %d / %d ALREADY COMPLETE (%d,%d); (%d,%d) -> %d. \n IGNORED\n",i_hsh, hsh->NbrMaxObj,hsh->LstObj[i_hsh][0],hsh->LstObj[i_hsh][1],hsh->LstObj[i_hsh][2],hsh->LstObj[i_hsh][3],hsh->LstObj[i_hsh][4] );
-    // printf("updating element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", i_hsh, iVer1,iVer2, hsh->LstObj[hsh->NbrObj][3], iTri, hsh->LstObj[hsh->NbrObj][4]);
+    if(hsh->LstObj[i_hsh][3] ==0){hsh->LstObj[i_hsh][3] = iTri;} // complete the element
+    else printf(" ## WARNING: HSH ELEMENT %d / %d ALREADY COMPLETE (%d,%d); (%d,%d) -> %d. \n IGNORED\n",
+        i_hsh, hsh->NbrMaxObj,hsh->LstObj[i_hsh][0],hsh->LstObj[i_hsh][1],hsh->LstObj[i_hsh][2]
+            ,hsh->LstObj[i_hsh][3],hsh->LstObj[i_hsh][4] );
+    
   }
 
   return 0;
@@ -454,8 +462,8 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
     
     if(ToDelete==1)
     {
-    printf("deleting the element %d",i_hsh);
-    hash_out_index(hsh,i_hsh);
+    // printf("deleting the element %d",i_hsh);
+    // hash_out_index(hsh,i_hsh);
 
     // we redo the chain
     int key = iVer1 + iVer2; 
@@ -466,8 +474,12 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
       if((hsh->LstObj[j_hsh][0]==iVer1 && hsh->LstObj[j_hsh][1]==iVer2) || (hsh->LstObj[j_hsh][1]==iVer1 && hsh->LstObj[j_hsh][0]==iVer2) ) 
       {
         // sewing it
-        if(i_bef==0){hsh->Head[key]       =hsh->LstObj[j_hsh][4]; printf("sewing the element to the head \n");} 
-        if(i_bef!=0){hsh->LstObj[i_bef][4]=hsh->LstObj[j_hsh][4]; printf("sewing the element to element %d \n",i_bef);}
+        if(i_bef==0){hsh->Head[key]       =hsh->LstObj[j_hsh][4]; 
+          // printf("sewing the element to the head \n");
+        } 
+        if(i_bef!=0){hsh->LstObj[i_bef][4]=hsh->LstObj[j_hsh][4]; 
+          // printf("sewing the element to element %d \n",i_bef);
+        }
 
         // if(j_hsh<hsh->NbrObj)
         {
@@ -482,20 +494,24 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
           int j_bef = 0;
           while(k_hsh!=0)
           {
-            printf(" test %d vs %d : (%d,%d) vs (%d,%d)    \n",k_hsh,j_hsh,hsh->LstObj[k_hsh][0],hsh->LstObj[k_hsh][1], hsh->LstObj[j_hsh][0],hsh->LstObj[j_hsh][1]);
+            // printf(" test %d vs %d : (%d,%d) vs (%d,%d)    \n",k_hsh,j_hsh,hsh->LstObj[k_hsh][0],hsh->LstObj[k_hsh][1], hsh->LstObj[j_hsh][0],hsh->LstObj[j_hsh][1]);
             if(hsh->LstObj[k_hsh][0]==hsh->LstObj[j_hsh][0] && hsh->LstObj[k_hsh][1]==hsh->LstObj[j_hsh][1])
             {
               if(j_bef==0){hsh->Head[key]       =hsh->LstObj[k_hsh][4];} 
               if(j_bef!=0){hsh->LstObj[j_bef][4]=hsh->LstObj[k_hsh][4];}
               for(int i=0;i<5;i++) hsh->LstObj[last_index][i]=0;
             }
-            else{j_bef = k_hsh; k_hsh = hsh->LstObj[j_bef][4]; printf("chain secondaire : %d -> %d \n",j_bef,k_hsh);}
+            else{j_bef = k_hsh; k_hsh = hsh->LstObj[j_bef][4]; 
+              // printf("chain secondaire : %d -> %d \n",j_bef,k_hsh);
+            }
           }
           hsh->NbrObj -=1;
         }
         
       }
-      else{i_bef = j_hsh; j_hsh = hsh->LstObj[j_hsh][4]; printf("chain primaire : %d -> %d \n",i_bef,j_hsh);}      
+      else{i_bef = j_hsh; j_hsh = hsh->LstObj[j_hsh][4]; 
+        // printf("chain primaire : %d -> %d \n",i_bef,j_hsh);
+      }      
     } 
     }
 
@@ -820,6 +836,16 @@ double surf(double2d P1, double2d P2, double2d P3)
   return K_surf;
 }
 
+double surf_tri(Mesh* Msh, int Tri)
+{
+  double* P1; double*P2;  double* P3;
+  int p1,p2,p3;
+  p1 = Msh->Tri[Tri][0];  p2 = Msh->Tri[Tri][1];  p3 = Msh->Tri[Tri][2]; 
+  P1 = Msh->Crd[p1];      P2 = Msh->Crd[p2];      P3 = Msh->Crd[p3];
+
+  return surf(P1,P2,P3);
+}
+
 double quality(double2d P1, double2d P2, double2d P3)
 {
   
@@ -924,6 +950,49 @@ double* Coord_bary(double2d Point, Mesh* Msh, int iTri)
 
 }
 
+int* point_neighbours(Mesh* Msh, int Ver, int init_Tri) // returns an array of the triangle linked to the point Ver
+{
+  int iTri= init_Tri ,jTri = 0;
+  // printf(" ------ Ver : %d ----------- \n", Ver);
+
+  int* domain = calloc(2+20,sizeof(int)); // how many triangle could a point possibly have ?
+
+  for(int iEdg=0;iEdg<3;iEdg++) 
+  {
+    if(Msh->Tri[iTri][tri2edg[iEdg][0]] == Ver)   jTri = Msh->TriVoi[iTri][tri2edg[iEdg][1]]; 
+    if(Msh->Tri[iTri][tri2edg[iEdg][1]] == Ver)   jTri = Msh->TriVoi[iTri][tri2edg[iEdg][0]];
+  }
+  
+  // printf(" iTri : %d (%d,%d,%d) \n",iTri, Msh->Tri[iTri][0],  Msh->Tri[iTri][1],  Msh->Tri[iTri][2]);
+    
+  int sizeof_domain =2;
+  while((jTri != init_Tri && jTri !=0) && sizeof_domain<22 )
+  {
+    // printf(" jTri : %d (%d,%d,%d) \n",jTri, Msh->Tri[jTri][0],  Msh->Tri[jTri][1],  Msh->Tri[jTri][2]);
+
+    for(int iEdg=0;iEdg<3;iEdg++) 
+    {
+      // printf(" point of this edge %d : (%d,%d)  \n",iEdg,Msh->Tri[jTri][tri2edg[iEdg][0]],Msh->Tri[jTri][tri2edg[iEdg][1]]);
+
+      if(Msh->Tri[jTri][tri2edg[iEdg][0]] == Ver && iTri != Msh->TriVoi[jTri][tri2edg[iEdg][1]]){   
+        iTri=jTri;  jTri = Msh->TriVoi[jTri][tri2edg[iEdg][1]]; break;}
+
+      // printf(" print jTri : %d\n",jTri);
+
+      if(Msh->Tri[jTri][tri2edg[iEdg][1]] == Ver && iTri != Msh->TriVoi[jTri][tri2edg[iEdg][0]]){   
+        iTri=jTri;  jTri = Msh->TriVoi[jTri][tri2edg[iEdg][0]]; break;}  
+    }
+    
+    domain[sizeof_domain] = jTri; sizeof_domain++;
+  }
+
+  // printf("found the domain of the point \n");
+
+  return domain;
+  
+}
+
+
 // localise_Tri 
 // NULL                         if on point <-- CHANGED
 // iTri, edge_Tri, 0, on_edge;  if on edge 
@@ -945,7 +1014,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
   int edge_case =1;           
 
   // Point is on Point;
-  int on_Point = 0; int Ver=0, jTri=0;
+  int on_Point = 0; int Ver=0;
   Msh->TriMrk[0]+=1;
   while(in_trig ==0 && on_edge ==0)
   {
@@ -956,7 +1025,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
     double* coord = Coord_bary(Point,Msh,iTri);
     ax1 = coord[0]; ax2 = coord[1]; ax3= coord[2];
 
-    printf("In the triangle %d, with neighbours (%d,%d,%d) the values are (%10f,%10f,%10f) \n",iTri,Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2],ax1,ax2,ax3);
+    // printf("In the triangle %d, with neighbours (%d,%d,%d) the values are (%10f,%10f,%10f) \n",iTri,Msh->TriVoi[iTri][0],Msh->TriVoi[iTri][1],Msh->TriVoi[iTri][2],ax1,ax2,ax3);
     //check
     if(ax1<0 && (ax2<0 && ax3<0) ) printf("\n ERROR POINT OR TRIANGLE WRONGLY DEFINED, IGNORED \n");
 
@@ -987,39 +1056,10 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
 
   }
 
-  // returns an array of the triangle linked to the point
-  if(on_Point)
-  {
-    printf(" ------ Ver : %d ----------- \n", Ver);
-    // return NULL;
-    int* domain = calloc(2+20,sizeof(int)); // how many triangle could a point possibly have ?
-    domain[0] =0; domain[1]=0;
-    for(int iEdg=0;iEdg<3;iEdg++) 
-    {
-      if(Msh->Tri[iTri][tri2edg[iEdg][0]] == Ver)       jTri = Msh->TriVoi[iTri][tri2edg[iEdg][1]]; 
-      else if (Msh->Tri[iTri][tri2edg[iEdg][1]] == Ver) jTri = Msh->TriVoi[iTri][tri2edg[iEdg][0]];
-    }
-    
-    // printf(" iTri : %d (%d,%d,%d) \n",iTri, Msh->Tri[iTri][0],  Msh->Tri[iTri][1],  Msh->Tri[iTri][2]);
-      
-    int sizeof_domain =2;
-    while((jTri != iTri && jTri !=0) && sizeof_domain<22 )
-    {
-      // printf(" jTri : %d (%d,%d,%d) \n",jTri, Msh->Tri[jTri][0],  Msh->Tri[jTri][1],  Msh->Tri[jTri][2]);
-      
-      for(int iEdg=0;iEdg<3;iEdg++) 
-      {
-        if(Msh->Tri[jTri][tri2edg[iEdg][0]] == Ver)       jTri = Msh->TriVoi[iTri][tri2edg[iEdg][1]]; 
-        else if (Msh->Tri[jTri][tri2edg[iEdg][1]] == Ver) jTri = Msh->TriVoi[iTri][tri2edg[iEdg][0]];
-      }
-      // printf(" to %d \n",jTri);
-      domain[sizeof_domain] = jTri; sizeof_domain++;
+  
+  int* Result = (int*)calloc(4,sizeof(int));
 
-    
-
-    }
-    return domain;
-  }
+  if(on_Point){Result = point_neighbours(Msh,Ver,iTri);}
 
   // border case 
   if(on_edge && iTri == 0){on_edge=0; iTri = edge_Tri; in_trig =1;}
@@ -1028,7 +1068,8 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
   // if(on_edge) printf("The Point has been located on an edge between %d and %d \n", iTri,edge_Tri);
   // if(in_trig) printf("The Point has been located in triangle %d \n",iTri);
 
-  int* Result = (int*)calloc(4,sizeof(int));
+  
+
   Result[0]= in_trig;   Result[1]= on_edge;
   Result[2]= iTri;    Result[3] = edge_Tri;
 
@@ -1557,8 +1598,8 @@ Image* Compression_step(Image* Raw_image, Image* Comp_image)
   for(int iVer=1;iVer<Raw_image->Msh->NbrVerMax;iVer++)
   {
     temp_diff = fabs(sol_interpol[iVer]-Raw_image->Sol[iVer]);  // mm point ??
-    printf(" point in mesh : %d (%10f,%10f,%10f);   %d (%10f,%10f,%10f) \n",  iVer, Raw_image->Msh->Crd[iVer][0], Raw_image->Msh->Crd[iVer][1], Raw_image->Msh->Crd[iVer][2], 
-                                                                              iVer, Comp_image->Msh->Crd[iVer][0],Comp_image->Msh->Crd[iVer][1],Comp_image->Msh->Crd[iVer][2] );
+    // printf(" point in mesh : %d (%10f,%10f,%10f);   %d (%10f,%10f,%10f) \n",  iVer, Raw_image->Msh->Crd[iVer][0], Raw_image->Msh->Crd[iVer][1], Raw_image->Msh->Crd[iVer][2], 
+    //                                                                           iVer, Comp_image->Msh->Crd[iVer][0],Comp_image->Msh->Crd[iVer][1],Comp_image->Msh->Crd[iVer][2] );
     if(temp_diff>max_diff)
     {
       max_diff = temp_diff;
@@ -1584,7 +1625,6 @@ Image* Compression(Image* Raw_image)
   printf("\n ======================================================= \n \n");
 
   Mesh* Msh       = Raw_image->Msh;
-  double* sol     = Raw_image->Sol;
 
   msh_boundingbox(Msh);
   msh_neighbors(Msh);
@@ -1617,7 +1657,6 @@ double* Interpol_sol(Image* Raw_image, Image* Comp_image)
 
   Mesh* Msh       = Raw_image->Msh;
   Mesh* Msh_red   = Comp_image->Msh;
-  double* sol     = Raw_image->Sol;
   double* sol_red = Comp_image->Sol;
 
   double* sol_interpol = calloc(Msh->NbrVer , sizeof(double));
@@ -1687,6 +1726,7 @@ int Projection(Image* Raw_image, Image* Comp_image)
       Comp_image->Sol[iVer] = Raw_image->Sol[Ver];
     }
   }
+  return 0;
 }
 
 double quad_mean(Image* Raw_image, Image* Comp_image){
@@ -1702,5 +1742,135 @@ double quad_mean(Image* Raw_image, Image* Comp_image){
 }
 
 // ============================================================================
+//                       Maillage addaptation
 // ============================================================================
 
+// double* grad_tri(Mesh* Msh,double* u, int Tri)
+// {
+//   double* P1; double*P2;  double* P3;
+//   int p1,p2,p3;
+//   p1 = Msh->Tri[Tri][0];  p2 = Msh->Tri[Tri][1];  p3 = Msh->Tri[Tri][2]; 
+//   P1 = Msh->Crd[p1];      P2 = Msh->Crd[p2];      P3 = Msh->Crd[p3];
+//   double A_k = surf(P1,P2,P3);
+
+//   double* grad_u = calloc(2,sizeof(double));
+
+//   double base_1x, base_1y, base_2x, base_2y ,base_3x, base_3y;
+//   base_1x = (P2[0]-P3[0])/(2*A_k);  base_1y = -(P2[1]-P3[1])/(2*A_k);
+//   base_2x = (P3[0]-P1[0])/(2*A_k);  base_2y = -(P3[1]-P1[1])/(2*A_k);  
+//   base_3x = (P1[0]-P2[0])/(2*A_k);  base_3y = -(P1[1]-P2[1])/(2*A_k); 
+  
+//   grad_u[0] = u[p1]*base_1x + u[p2]*base_2x + u[p3]*base_3x;
+//   grad_u[1] = u[p1]*base_1y + u[p2]*base_2y + u[p3]*base_3y;
+
+//   return grad_u;
+// }
+
+// double* grad_ver(Mesh* Msh,double* u, int iVer)
+// {
+//   printf(" \n --------------------------- \n");
+//   int* support = Localise_Tri(Msh,Msh->Crd[iVer]);
+
+//   double* gradu_Tri;
+//   double* grad_u    = calloc(2,sizeof(double));
+
+//   int size_support=3;
+//   double surface_support, surface_tri; 
+
+//   for(int jTri=2;jTri<size_support;jTri++)
+//   {
+//     printf("calculating the gradient of triangle %d \n", support[jTri]);
+//     if(support[jTri+1]!=NULL) size_support+=1;
+
+//     surface_tri = surf_tri(Msh,support[jTri]);
+//     surface_support += surface_tri;
+
+//     gradu_Tri = grad_tri(Msh,u,support[jTri]);
+//     printf(" gradu_Tri : (%10f,%10f) \n ", gradu_Tri[0], gradu_Tri[1]);
+//     grad_u[0] += surface_tri * gradu_Tri[0];
+//     grad_u[1] += surface_tri * gradu_Tri[1];
+
+//   }
+//   printf(" grad_u : (%10f,%10f) \n", grad_u[0], grad_u[1]);
+//   return grad_u;
+// }
+
+// double** grad_mesh(Mesh* Msh,double* u)
+// {
+//   double** grad_u = calloc(Msh->NbrVer,sizeof(double[2]));
+//   double* temp   = calloc(2,sizeof(double));
+//   msh_neighbors(Msh);
+
+//   for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
+//   {
+//     printf(" calculating the gradient of point %d \n", iVer);
+//     temp = grad_ver(Msh,u,iVer);
+//     grad_u[iVer] = temp;
+//     printf(" grad_u_x : %10f \n" ,grad_u[iVer][0]);
+//   }
+//   return grad_u;
+// }
+
+// double** Hessienne(Mesh* Msh, double* u)
+// {
+//   double* grad_u_x = calloc(Msh->NbrVer,sizeof(double));
+//   double* grad_u_y = calloc(Msh->NbrVer,sizeof(double));
+//   double* temp   = calloc(2,sizeof(double));
+//   msh_neighbors(Msh);
+
+//   // calcul du gradient
+//   for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
+//   {
+//     temp = grad_ver(Msh,u,iVer);
+//     grad_u_x[iVer] = temp[0];    grad_u_y[iVer] = temp[1];
+//   }
+
+//   // calcul de la Hessienne
+//   double** Hess = calloc(Msh->NbrVer, sizeof(double[3]));
+//   for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
+//   {
+//     printf(" calculating the gradient of point %d \n", iVer);
+//     temp = grad_ver(Msh,grad_u_x,iVer);
+//     Hess[iVer][0] = temp[0];  Hess[iVer][1]= temp[1];
+
+//     temp = grad_ver(Msh,grad_u_y,iVer);
+//     Hess[iVer][1] = 0.5*( Hess[iVer][1] + temp[0]);  Hess[iVer][2]= temp[1];
+//   }
+
+
+//   return Hess;
+// }
+
+// int metrique(Mesh* Msh,double* u)
+// {
+//   double** M        = calloc(Msh->NbrVer,sizeof(double3d)); 
+//   double* grad_u_x  = calloc(Msh->NbrVer,sizeof(double));
+//   double* grad_u_y  = calloc(Msh->NbrVer,sizeof(double));
+//   double* temp      = calloc(2,sizeof(double));
+
+//   double mat[3];
+//   double l[2];
+//   double v[4];
+  
+//   double** grad_u= grad_mesh(Msh,u);
+//   for(int i=0;i<Msh->NbrVer+1;i++){grad_u_x[i]= grad_u[i][0]; grad_u_y[i]=grad_u[i][1];}
+
+//   for(int iVer=1;iVer<Msh->NbrVer;iVer++)
+//   {
+    
+//     printf(" calculating the gradient of point %d \n", iVer);
+//     temp = grad_ver(Msh,grad_u_x,iVer);
+//     mat[0] = temp[0];  mat[1]= temp[1];
+
+//     temp = grad_ver(Msh,grad_u_y,iVer);
+//     mat[1] = 0.5*(mat[1] + temp[0]);  mat[2]= temp[1];
+
+//     Sol_Eigen2d(mat,l,v);
+//     l[0] = max(l[0],1e-10);    l[1] = max(l[1],1e-10);
+
+    
+
+//   }
+
+//   return 0;
+// }
