@@ -93,7 +93,7 @@ double* sol_read(char* file, int mshDim, int mshNbrSol);
 
 //--- Functions to be implemented
 int msh_boundingbox(Mesh* Msh); // compute the bouding box of the mesh
-int msh_neighbors(Mesh* Msh); // build TriVoi with a hash table
+int msh_neighbors(Mesh* Msh, int test); // build TriVoi with a hash table
 int msh_neighborsQ2(Mesh* Msh); // build TriVoi with the naive quadratic approach
 
 //--- Implementing the following function should be necessary

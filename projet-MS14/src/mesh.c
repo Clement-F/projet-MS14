@@ -325,7 +325,7 @@ int msh_neighborsQ2(Mesh* Msh)
 // ============================================================================
 // ============================================================================
 
-int msh_neighbors(Mesh* Msh)
+int msh_neighbors(Mesh* Msh, int test)
 {
   int iTri, iEdg, iVer1, iVer2, jVer1, jVer2, jTri, jEdg;
 
@@ -367,9 +367,12 @@ int msh_neighbors(Mesh* Msh)
     }
   }
 
+  if(test ==0)
+  {
   // free(hsh);
   // hsh = NULL;
-  Msh->Hsh = hsh;
+  }
+  else Msh->Hsh = hsh;
   return 1;
 }
 
@@ -448,7 +451,6 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
   return 0;
 }
 
-// NEED TESTING
 int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an element of the hash table
 {
   int i_hsh;
@@ -465,47 +467,33 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
     if(ToDelete==1)
     {
     // we redo the chain
-    // printf(" deleting element : %d \n", i_hsh);
-    // hash_out_index(hsh,i_hsh);
-    // printf(" the chain of the element is : \n");
     int key = iVer1 + iVer2; 
     
-    // hash_out_chain(hsh, key);
     int j_hsh = hsh->Head[key];
-    // printf(" j_hsh =  %d \n", j_hsh);
     int i_bef = 0;
-    while(j_hsh != i_hsh && j_hsh != 0){ 
-      // printf(" j_hsh = %d, i_bef = %d \n", j_hsh, i_bef);     
+    while(j_hsh != i_hsh && j_hsh != 0){   
       i_bef = j_hsh; j_hsh = hsh->LstObj[j_hsh][4];}
     if(j_hsh == 0 && i_bef !=0){printf(" ERROR : element not encountered, primary chain was not created correctly \n ");  return 0;}
     if(i_bef == 0){
-      // printf(" element linked to the head \n");
       hsh->Head[key] = hsh->LstObj[i_hsh][4];}
     hsh->LstObj[i_bef][4] = hsh->LstObj[i_hsh][4];  // linking past and future skipping the present
 
-    // printf(" \n ----------- \n");
-    
-    // printf(" the replacement chain is : \n");
+
     key = hsh->LstObj[hsh->NbrObj][0] + hsh->LstObj[hsh->NbrObj][1];
-    // hash_out_chain(hsh, key);
     j_hsh = hsh->Head[key];
-    // printf(" j_hsh =  %d, %d \n", j_hsh, hsh->NbrObj);
     i_bef = 0;
     while(j_hsh != hsh->NbrObj && j_hsh != 0)
-    { 
-      // printf(" j_hsh = %d, i_bef = %d \n", j_hsh, i_bef);     
+    {  
       i_bef = j_hsh; j_hsh = hsh->LstObj[j_hsh][4];
     }
     if(j_hsh == 0 && i_bef !=0){printf(" ERROR, element not encountered, secondary chain was not created correctly \n "); return 0;}
     if(i_bef == 0){
-      // printf(" element linked to the head \n");
        hsh->Head[key] = i_hsh;}
     hsh->LstObj[i_bef][4] = i_hsh;  // changing the present
 
     for(int i=0;i<5;i++){ hsh->LstObj[i_hsh][i] = hsh->LstObj[hsh->NbrObj][i];  
                           hsh->LstObj[hsh->NbrObj][i]=0; 
                         }
-    // hash_out_index(hsh,hsh->NbrObj);
     hsh->NbrObj -=1;
 
     return -1;
@@ -515,7 +503,6 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
     // we put an element to 0 and potentially put the element in a "good form"
     if(ToDelete==0)
     {
-    // printf(" changing the element \n ");
       if(hsh->LstObj[i_hsh][3]==iTri) hsh->LstObj[i_hsh][3]=0;
       if(hsh->LstObj[i_hsh][2]==iTri) 
       {
@@ -773,7 +760,7 @@ int valid_edge(Mesh* Msh, int iTri, int iEdg)
 double* connex_comp(Mesh* Msh)
 {
   printf("creating neighbors list of the mesh \n");
-  msh_neighbors(Msh) ;
+  msh_neighbors(Msh,0) ;
   printf("neighbors list of the mesh done \n");
   printf("creating connex composante of the mesh \n");
 
@@ -1441,7 +1428,7 @@ Mesh* Maillage_Delaunay(int Nb_Point, Mesh* Msh)
   srand(10);
 
   double Crd_x,Crd_y;
-  msh_neighbors(Msh);
+  msh_neighbors(Msh,0);
   Msh->TriMrk[0]=0;
 
   for(int it=0;it<=Nb_Point;it++)
@@ -1553,7 +1540,7 @@ Image* Compression_alea(Image* Raw_image, double factor)
   Msh_red->Crd[3][0] = Msh->Box[1]; Msh_red->Crd[3][1] = Msh->Box[2];
   Msh_red->Crd[4][0] = Msh->Box[1]; Msh_red->Crd[4][1] = Msh->Box[3];
 
-  msh_neighbors(Msh_red);
+  msh_neighbors(Msh_red,0);
 
   int jVer=1, newpoint=0;
   for(int iVer=1;iVer<Msh->NbrVer; iVer++) 
@@ -1590,8 +1577,8 @@ Image* Compression_step(Image* Raw_image, Image* Comp_image)
   msh_boundingbox(Raw_image->Msh);
   msh_boundingbox(Comp_image->Msh);
 
-  msh_neighbors(Raw_image->Msh);
-  msh_neighbors(Comp_image->Msh);
+  msh_neighbors(Raw_image->Msh,0);
+  msh_neighbors(Comp_image->Msh,0);
 
   printf(" bounds of the mesh found  ");
 
@@ -1634,7 +1621,7 @@ Image* Compression(Image* Raw_image)
   Mesh* Msh       = Raw_image->Msh;
 
   msh_boundingbox(Msh);
-  msh_neighbors(Msh);
+  msh_neighbors(Msh,0);
 
   Mesh* Msh_red = msh_read("../data/carre_base.mesh", 0);
   double* sol_red = calloc(Msh->NbrVerMax+1,sizeof(double));
@@ -1712,7 +1699,7 @@ int Projection(Image* Raw_image, Image* Comp_image)
 
   Mesh* Msh = Raw_image->Msh;
 
-  msh_neighbors(Msh);
+  msh_neighbors(Msh,0);
 
   printf(" Projection of a sol \n");
 
@@ -1806,7 +1793,7 @@ double quad_mean(Image* Raw_image, Image* Comp_image){
 // {
 //   double** grad_u = calloc(Msh->NbrVer,sizeof(double[2]));
 //   double* temp   = calloc(2,sizeof(double));
-//   msh_neighbors(Msh);
+//   msh_neighbors(Msh,0);
 
 //   for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
 //   {
@@ -1823,7 +1810,7 @@ double quad_mean(Image* Raw_image, Image* Comp_image){
 //   double* grad_u_x = calloc(Msh->NbrVer,sizeof(double));
 //   double* grad_u_y = calloc(Msh->NbrVer,sizeof(double));
 //   double* temp   = calloc(2,sizeof(double));
-//   msh_neighbors(Msh);
+//   msh_neighbors(Msh,0);
 
 //   // calcul du gradient
 //   for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
