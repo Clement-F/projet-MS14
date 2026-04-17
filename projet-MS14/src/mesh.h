@@ -105,6 +105,7 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri);             // =
 int hash_bound(HashTable* hsh);                                             // ==> prints the number of edges on the boundary
 int hash_collision(HashTable* hsh);                                         // ==> prints the mean and max of collision of the HashTable 
 int hash_out(HashTable* hsh);                                               // ==> prints the HashTable
+int hash_out_chain(HashTable* hsh, int key);
 
 //--- Fonction used for adaptation
 

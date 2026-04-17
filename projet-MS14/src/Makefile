@@ -1,5 +1,6 @@
 #
 CC=gcc
+R =rm
 COPTS= -O2 -Wall
 
 
@@ -53,7 +54,7 @@ main_adapt.o :	main_adaptative.c mesh.h
 
 # -------------------------	Test			--------------------------------
 
-test: mesh.o test.o eigen.o libmesh6.o  
+test: mesh.o test.o eigen.o libmesh6.o
 	$(CC) $(COPTS) -o test mesh.o  test.o eigen.o libmesh6.o -lm 
 test.o : test.c mesh.h
 	$(CC) -c $(COPTS)  -I. test.c 
@@ -61,6 +62,12 @@ test.o : test.c mesh.h
 # ------------------------------------------------------
 
 clean :
-	-rm mesh.o main_mesh.o eigen.o libmesh6.o
+	$(R) *.o
+
+clean_all :
+	$(R) *.o
+	$(R) *.exe
+	$(R) *.mesh
+	$(R) *.sol
 
 
