@@ -454,7 +454,7 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
   int i_hsh;
   i_hsh = hash_find(hsh,iVer1,iVer2); // check if the element is in the hash_list
 
-  if(i_hsh ==0){ printf("\n DELETING A NON EXISTING ELEMENT, IGNORED \n "); return 0;}
+  if(i_hsh ==0){ printf("\n ERROR: DELETING A NON EXISTING ELEMENT, IGNORED \n "); return 0;}
   if(i_hsh !=0)
   {
     int ToDelete=0;
@@ -465,55 +465,57 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
     if(ToDelete==1)
     {
     // we redo the chain
-    printf(" deleting element : %d \n", i_hsh);
-    hash_out_index(hsh,i_hsh);
-    printf(" the chain of the element is : \n");
+    // printf(" deleting element : %d \n", i_hsh);
+    // hash_out_index(hsh,i_hsh);
+    // printf(" the chain of the element is : \n");
     int key = iVer1 + iVer2; 
     
-    hash_out_chain(hsh, key);
+    // hash_out_chain(hsh, key);
     int j_hsh = hsh->Head[key];
     // printf(" j_hsh =  %d \n", j_hsh);
     int i_bef = 0;
-    while(j_hsh != i_hsh && j_hsh != 0){ printf(" j_hsh = %d, i_bef = %d \n", j_hsh, i_bef);     i_bef = j_hsh; j_hsh = hsh->LstObj[j_hsh][4];}
-    if(j_hsh == 0 && i_bef !=0){printf(" element not encountered, primary chain was not created correctly \n "); return 0;}
+    while(j_hsh != i_hsh && j_hsh != 0){ 
+      // printf(" j_hsh = %d, i_bef = %d \n", j_hsh, i_bef);     
+      i_bef = j_hsh; j_hsh = hsh->LstObj[j_hsh][4];}
+    if(j_hsh == 0 && i_bef !=0){printf(" ERROR : element not encountered, primary chain was not created correctly \n ");  return 0;}
     if(i_bef == 0){
-      printf(" element linked to the head \n");
+      // printf(" element linked to the head \n");
       hsh->Head[key] = hsh->LstObj[i_hsh][4];}
     hsh->LstObj[i_bef][4] = hsh->LstObj[i_hsh][4];  // linking past and future skipping the present
 
-    printf(" \n ----------- \n");
+    // printf(" \n ----------- \n");
     
     // printf(" the replacement chain is : \n");
-    // key = hsh->LstObj[hsh->NbrObj][4];
+    key = hsh->LstObj[hsh->NbrObj][0] + hsh->LstObj[hsh->NbrObj][1];
     // hash_out_chain(hsh, key);
-    // j_hsh = hsh->Head[key];
+    j_hsh = hsh->Head[key];
     // printf(" j_hsh =  %d, %d \n", j_hsh, hsh->NbrObj);
-    // i_bef = 0;
-    // while(j_hsh != hsh->NbrObj && j_hsh != 0){ printf(" j_hsh = %d, i_bef = %d \n", j_hsh, i_bef);     i_bef = j_hsh; j_hsh = hsh->LstObj[j_hsh][4];}
-    // if(j_hsh == 0 && i_bef !=0){printf(" element not encountered, secondary chain was not created correctly \n "); return 0;}
-    // if(i_bef == 0){
-    //   printf(" element linked to the head \n");
-    //    hsh->Head[key] = i_hsh;}
-    // hsh->LstObj[i_bef][4] = i_hsh;  // changing the present
+    i_bef = 0;
+    while(j_hsh != hsh->NbrObj && j_hsh != 0)
+    { 
+      // printf(" j_hsh = %d, i_bef = %d \n", j_hsh, i_bef);     
+      i_bef = j_hsh; j_hsh = hsh->LstObj[j_hsh][4];
+    }
+    if(j_hsh == 0 && i_bef !=0){printf(" ERROR, element not encountered, secondary chain was not created correctly \n "); return 0;}
+    if(i_bef == 0){
+      // printf(" element linked to the head \n");
+       hsh->Head[key] = i_hsh;}
+    hsh->LstObj[i_bef][4] = i_hsh;  // changing the present
 
-    for(int i=0;i<5;i++){ hsh->LstObj[i_hsh][i] = 0;  
-                          // hsh->LstObj[hsh->NbrObj][i]=0; 
+    for(int i=0;i<5;i++){ hsh->LstObj[i_hsh][i] = hsh->LstObj[hsh->NbrObj][i];  
+                          hsh->LstObj[hsh->NbrObj][i]=0; 
                         }
-    // hsh->NbrObj -=1;
+    // hash_out_index(hsh,hsh->NbrObj);
+    hsh->NbrObj -=1;
 
-    printf(" new chains : \n");
-    printf(" new primary chain : \n");
-    key = iVer1 + iVer2; 
-    hash_out_chain(hsh,key);
-
-    return 1;
+    return -1;
     }
   
 
     // we put an element to 0 and potentially put the element in a "good form"
     if(ToDelete==0)
     {
-    printf(" changing the element \n ");
+    // printf(" changing the element \n ");
       if(hsh->LstObj[i_hsh][3]==iTri) hsh->LstObj[i_hsh][3]=0;
       if(hsh->LstObj[i_hsh][2]==iTri) 
       {
@@ -529,15 +531,15 @@ int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri)  // deletes an el
 
 int hash_out(HashTable* hsh)  // print the hash table
 {
-  for(int j=1;j<=hsh->NbrMaxObj;j++){
+  for(int j=1;j<=hsh->NbrObj;j++){
     hash_out_index(hsh,j);
   }
   printf(" \n ------------------ \n");
 
   for(int i=1;i<=hsh->SizHead;i++)
   {
-    printf("Head %d : %d ",i,hsh->Head[i]);
-    if(i%5 ==0)printf(" \n");
+    if(hsh->Head[i] !=0 ) printf("Head %d : %d ",i,hsh->Head[i]);
+    // if(i%5 ==0)printf(" \n");
   }
 
   return 0;

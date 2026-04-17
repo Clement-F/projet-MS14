@@ -4,6 +4,7 @@ int main(int argc, char* argv[])
 {
 
     // carre_debug
+    // naca0012
     // test neighbours
     Mesh* Msh       = msh_read("../data/naca0012.mesh", 0);
     Mesh* Msh_ref   = msh_read("../data/naca0012.mesh", 0);
@@ -89,25 +90,32 @@ int main(int argc, char* argv[])
     // hash_add needs no testing
 
     // hash_suppr
-    int size_hash = Msh->Hsh->NbrObj-1;
-    int i_h,iTri, n=0;
+    int size_hash = Msh->Hsh->NbrObj;
+    int i_h,iTri, suppr, n=0;
     // hash_out(Msh->Hsh);
-    while(size_hash>1 && n<1000)
+    while(size_hash>1)
     {
-        printf(" \n ===================== \n");
+        // printf("i");
+        // printf(" \n ===================== \n");
         i_h = rand()%size_hash;
         i1= Msh->Hsh->LstObj[i_h][0]; i2= Msh->Hsh->LstObj[i_h][1]; iTri= Msh->Hsh->LstObj[i_h][2];
         while(i1 == 0 || i2 ==0)
         {
+        // printf(" o ");
         i_h = rand()%size_hash;
         i1= Msh->Hsh->LstObj[i_h][0]; i2= Msh->Hsh->LstObj[i_h][1]; iTri= Msh->Hsh->LstObj[i_h][2];
         }
-        printf("deleting element (%d,%d) linked to %d \n", i1,i2,iTri);
-        hash_suppr(Msh->Hsh,i1,i2,iTri);
-        // size_hash -=1; 
+        // printf("deleting element (%d,%d) linked to %d \n", i1,i2,iTri);
+        suppr =hash_suppr(Msh->Hsh,i1,i2,iTri);
+        if(suppr == -1)  size_hash -=1; 
         n+=1;
-        printf(" \n  ==================== \n");
+        // printf(" \n  ==================== \n");
+    // printf(" suppr \n");
     }
+    i1= Msh->Hsh->LstObj[1][0]; i2= Msh->Hsh->LstObj[1][1]; iTri= Msh->Hsh->LstObj[1][2];
+    suppr =hash_suppr(Msh->Hsh,i1,i2,iTri);
+
+    hash_out(Msh->Hsh);
 
 
 
