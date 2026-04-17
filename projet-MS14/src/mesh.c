@@ -954,6 +954,8 @@ int* point_neighbours(Mesh* Msh, int Ver, int init_Tri) // returns an array of t
   int iTri= init_Tri ,jTri = 0;
   int* domain = calloc(2+20,sizeof(int)); // how many triangle could a point possibly have michael? 20 ?
 
+  // printf(" searching for the domain \n");
+
   for(int iEdg=0;iEdg<3;iEdg++) 
   {
     if(Msh->Tri[iTri][tri2edg[iEdg][0]] == Ver)   jTri = Msh->TriVoi[iTri][tri2edg[iEdg][1]]; 
@@ -961,18 +963,21 @@ int* point_neighbours(Mesh* Msh, int Ver, int init_Tri) // returns an array of t
   }
   
   int sizeof_domain =2;
-  while((jTri != init_Tri && jTri !=0) && sizeof_domain<22 )
+  while(  (jTri != init_Tri && jTri !=0) && sizeof_domain<22 )
   {
+    // printf(" search domain 1 \n");
     for(int iEdg=0;iEdg<3;iEdg++) 
     {
-      if(Msh->Tri[jTri][tri2edg[iEdg][0]] == Ver && iTri != Msh->TriVoi[jTri][tri2edg[iEdg][1]]){   
-        iTri=jTri;  jTri = Msh->TriVoi[jTri][tri2edg[iEdg][1]]; break;}
+      if(Msh->Tri[jTri][tri2edg[iEdg][0]] == Ver && iTri != Msh->TriVoi[jTri][tri2edg[iEdg][1]])
+      {iTri=jTri;  jTri = Msh->TriVoi[jTri][tri2edg[iEdg][1]]; break;}
 
-      if(Msh->Tri[jTri][tri2edg[iEdg][1]] == Ver && iTri != Msh->TriVoi[jTri][tri2edg[iEdg][0]]){   
-        iTri=jTri;  jTri = Msh->TriVoi[jTri][tri2edg[iEdg][0]]; break;}  
+      if(Msh->Tri[jTri][tri2edg[iEdg][1]] == Ver && iTri != Msh->TriVoi[jTri][tri2edg[iEdg][0]])
+      {iTri=jTri;  jTri = Msh->TriVoi[jTri][tri2edg[iEdg][0]]; break;}  
     }
+    // printf(" search domain 2 \n");
     domain[sizeof_domain] = jTri; sizeof_domain++;
   }
+  // printf(" domain found \n");
 
   return domain;
   
@@ -1004,11 +1009,20 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
   while(in_trig ==0 && on_edge ==0)
   {
     compass =0;
-    while(Msh->TriMrk[iTri] == Msh->TriMrk[0]+1){ printf(" (%d,%d) no you don't \n",Msh->TriMrk[iTri],Msh->TriMrk[0]);iTri = edge_case; edge_case+=1;}
+    while(Msh->TriMrk[iTri] == Msh->TriMrk[0]+1 || iTri ==0)
+    {
+      printf(" (%d,%d), %d no you don't \n",Msh->TriMrk[iTri],Msh->TriMrk[0],iTri);
+      iTri = edge_case; edge_case+=1;
+    }
+
     if(iTri !=0)
       Msh->TriMrk[iTri]= Msh->TriMrk[0]+1;
+
     double* coord = Coord_bary(Point,Msh,iTri);
     ax1 = coord[0]; ax2 = coord[1]; ax3= coord[2];
+    // int i1 = Msh->Tri[iTri][0],        i2 = Msh->Tri[iTri][1],        i3 = Msh->Tri[iTri][2];
+    // printf(" tri : %d   ax1 : %10f, ax2 : %10f, ax3 : %10f \n",iTri, ax1,ax2,ax3);
+    // printf("  P1 :(%10f,%10f), P2 : (%10f,%10f), P3 : (%10f,%10f) \n", Msh->Crd[i1][0],Msh->Crd[i1][1], Msh->Crd[i2][0],Msh->Crd[i2][1], Msh->Crd[i3][0],Msh->Crd[i3][1]);
 
     if(ax1<0 && (ax2<0 && ax3<0) ) printf("\n ERROR POINT OR TRIANGLE WRONGLY DEFINED, IGNORED \n");
  
@@ -1031,6 +1045,7 @@ int* Localise_Tri(Mesh* Msh, double2d Point)
     if(iTri == 0 && Msh->TriMrk[iTri] == Msh->TriMrk[0]+1){edge_case +=1; iTri = edge_case;}
 
   }
+  // printf("located \n");
 
   int* Result = (int*)calloc(4,sizeof(int));
 
@@ -1536,7 +1551,7 @@ Image* Compression_alea(Image* Raw_image, double factor)
 Image* Compression_step(Image* Raw_image, Image* Comp_image)
 {
   srand(8);
-  printf(" a new step to the compression of an image \n");
+  // printf(" a new step to the compression of an image \n");
   
   msh_boundingbox(Raw_image->Msh);
   msh_boundingbox(Comp_image->Msh);
@@ -1544,11 +1559,11 @@ Image* Compression_step(Image* Raw_image, Image* Comp_image)
   msh_neighbors(Raw_image->Msh,0);
   msh_neighbors(Comp_image->Msh,0);
 
-  printf(" bounds of the mesh found  ");
+  // printf(" bounds of the mesh found  ");
 
   double* sol_interpol = Interpol_sol(Raw_image,Comp_image);
 
-  printf(" interpolation of the sol calculated \n");
+  // printf(" interpolation of the sol calculated \n");
 
   double max_diff = 0, temp_diff=0;
   int Ver_insert=0; 
@@ -1556,21 +1571,25 @@ Image* Compression_step(Image* Raw_image, Image* Comp_image)
   for(int iVer=1;iVer<Raw_image->Msh->NbrVerMax;iVer++)
   {
     temp_diff = fabs(sol_interpol[iVer]-Raw_image->Sol[iVer]);  // mm point ??
-    // printf(" point in mesh : %d (%10f,%10f,%10f);   %d (%10f,%10f,%10f) \n",  iVer, Raw_image->Msh->Crd[iVer][0], Raw_image->Msh->Crd[iVer][1], Raw_image->Msh->Crd[iVer][2], 
-    //                                                                           iVer, Comp_image->Msh->Crd[iVer][0],Comp_image->Msh->Crd[iVer][1],Comp_image->Msh->Crd[iVer][2] );
+
     if(temp_diff>max_diff)
-    {
+    {      
+      int* Result =Localise_Tri(Comp_image->Msh,Raw_image->Msh->Crd[iVer]);
+      if(Result[0] !=0 ||Result[1] !=0)
+      {
       max_diff = temp_diff;
       Ver_insert = iVer;
+      }
     } 
-  }
 
+  }
+  
+  printf(" point in mesh : %d (%10f,%10f);  diff : %10f \n",  Ver_insert, Raw_image->Msh->Crd[Ver_insert][0], Raw_image->Msh->Crd[Ver_insert][1],max_diff );
+    
   if(Ver_insert !=0)
   {
     ajout_point(Comp_image->Msh,Raw_image->Msh->Crd[Ver_insert]);
-
-    Comp_image->Sol =realloc( Comp_image->Sol, (Raw_image->Msh->NbrVer * sizeof(double)));  
-    Comp_image->Sol[Ver_insert] = Raw_image->Sol[Ver_insert];       
+    Comp_image->Sol[Comp_image->Msh->NbrVer] = Raw_image->Sol[Ver_insert];       
   }
 
   return Comp_image;
@@ -1588,6 +1607,12 @@ Image* Compression(Image* Raw_image)
   msh_neighbors(Msh,0);
 
   Mesh*   Msh_red = msh_read("../data/carre_base.mesh", 0);
+  
+  Msh_red->Crd[1][0] = Msh->Box[0]; Msh_red->Crd[1][1] = Msh->Box[2];
+  Msh_red->Crd[2][0] = Msh->Box[0]; Msh_red->Crd[2][1] = Msh->Box[3];
+  Msh_red->Crd[3][0] = Msh->Box[1]; Msh_red->Crd[3][1] = Msh->Box[2];
+  Msh_red->Crd[4][0] = Msh->Box[1]; Msh_red->Crd[4][1] = Msh->Box[3];
+
   double* sol_red = calloc(Msh->NbrVerMax+1,sizeof(double));
   printf("Reduction mesh and sol allocated \n");
 
@@ -1598,11 +1623,13 @@ Image* Compression(Image* Raw_image)
 
   double qc = quad_mean(Raw_image, Comp_image);
   printf(" quadratic mean : %10f \n", qc);
-  while(qc>10)
+  int n =0;
+  while(qc>1 && n<1000)
   {
-    printf(" adding a new point \n");
+    // printf(" adding a new point \n");
     Comp_image= Compression_step(Raw_image,Comp_image);
     qc = quad_mean(Raw_image, Comp_image);
+    n +=1;
   }
   return Comp_image;
 }
@@ -1615,6 +1642,7 @@ double* Interpol_sol(Image* Raw_image, Image* Comp_image)
   Mesh* Msh       = Raw_image->Msh;
   Mesh* Msh_red   = Comp_image->Msh;
   double* sol_red = Comp_image->Sol;
+  msh_neighbors(Msh_red,0);
 
   double* sol_interpol = calloc(Msh->NbrVer , sizeof(double));
   for(int iVer=1;iVer<Msh->NbrVer;iVer++)
@@ -1623,19 +1651,21 @@ double* Interpol_sol(Image* Raw_image, Image* Comp_image)
     Point = Msh->Crd[iVer];                   // take a point of the base mesh
     int* Result =Localise_Tri(Msh_red,Point); // locate it in the compressed mesh
 
-    if((Result[0]!=0 && Result[1] !=0)&& Result != NULL) 
+    if((Result[0]!=0 || Result[1] !=0)&& Result != NULL) 
     {
-      printf(" sol in triangle or edge \n");
       iTri = Result[2];             
-      Crd = Coord_bary(Point,Msh_red,iTri);       
+      Crd = Coord_bary(Point,Msh_red,iTri); 
+      sol_interpol[iVer]= 0;      
       for(int i=0;i<3;i++)  sol_interpol[iVer] += Crd[i]*sol_red[Msh_red->Tri[iTri][i]];
       
-      if(Result[1]!=0)
-      {
-        iTri = Result[3];             
-        Crd = Coord_bary(Point,Msh_red,iTri);   
-        for(int i=0;i<3;i++)  sol_interpol[iVer] += Crd[i]*sol_red[Msh_red->Tri[iTri][i]];
-      }
+      // if(Result[1]!=0)
+      // {
+      //   iTri = Result[3];             
+      //   Crd = Coord_bary(Point,Msh_red,iTri); 
+      //   for(int i=0;i<3;i++)  sol_interpol[iVer] += Crd[i]*sol_red[Msh_red->Tri[iTri][i]];
+      // }
+
+      // printf(" sol : %10f \n", sol_interpol[iVer]);
 
     }
 
@@ -1643,11 +1673,18 @@ double* Interpol_sol(Image* Raw_image, Image* Comp_image)
     {
       // printf(" sol on vertex ");
       int Ver=0;
-      iTri= Result[2]; int jTri = Result[3];
+      iTri= Result[2]; 
+      // int jTri = Result[3];
       // printf(" shared with %d and %d ",iTri,jTri);
-      for(int i=0;i<3;i++) for(int j=0;j<3;j++) if(Msh_red->Tri[iTri][i] == Msh_red->Tri[jTri][j]) Ver = Msh_red->Tri[iTri][i];
       
-      sol_interpol[iVer] += sol_red[Ver];
+      for(int i=0;i<3;i++)
+        if( distance(Point, Comp_image->Msh->Crd[Comp_image->Msh->Tri[iTri][i]] )<1e-6) 
+        {
+          // printf(" Ver found \n");
+          Ver = Comp_image->Msh->Tri[iTri][i];
+        }
+      
+      sol_interpol[iVer] = sol_red[Ver];
     }
     
     
@@ -1664,23 +1701,32 @@ int Projection(Image* Raw_image, Image* Comp_image)
 
   msh_neighbors(Msh,0);
 
-  printf(" Projection of a sol \n");
+  // printf(" Projection of a sol \n");
 
   for(int iVer=1;iVer<Comp_image->Msh->NbrVer; iVer++)
   {
-    printf(" finding the sol of point (%10f,%10f) ", Comp_image->Msh->Crd[iVer][0], Comp_image->Msh->Crd[iVer][1]);
+    // printf(" finding the sol of point (%10f,%10f) ", Comp_image->Msh->Crd[iVer][0], Comp_image->Msh->Crd[iVer][1]);
 
     Point = Comp_image->Msh->Crd[iVer];   // take a point of the base mesh
     int* Result =Localise_Tri(Msh,Point); // locate it in the compressed mesh
 
-    printf(" point located in the raw mesh \n");
+    // printf(" point located in the raw mesh \n");
     if((Result[0]==0 && Result[1] ==0)&& Result != NULL)
     {
-      printf(" sol on vertex ");
+      // printf(" sol on vertex ");
       int Ver=0;
-      iTri= Result[2]; int jTri = Result[3];
-      // printf(" shared with %d and %d ",iTri,jTri);
-      for(int i=0;i<3;i++) for(int j=0;j<3;j++) if(Comp_image->Msh->Tri[iTri][i] == Comp_image->Msh->Tri[jTri][j]) Ver = Comp_image->Msh->Tri[iTri][i];
+      iTri= Result[2]; 
+      // int jTri = Result[3];
+      // printf(" shared with %d : (%d,%d,%d) ",iTri, Raw_image->Msh->Tri[iTri][0], Raw_image->Msh->Tri[iTri][1], Raw_image->Msh->Tri[iTri][2]);
+
+      printf(" %10f ", distance(Point, Raw_image->Msh->Crd[Raw_image->Msh->Tri[iTri][1]] ) );
+
+      for(int i=0;i<3;i++)
+        if( distance(Point, Raw_image->Msh->Crd[Raw_image->Msh->Tri[iTri][i]] )<1e-6) 
+        {
+          // printf(" Ver found \n");
+          Ver = Raw_image->Msh->Tri[iTri][i];
+        }
       
       Comp_image->Sol[iVer] = Raw_image->Sol[Ver];
     }
@@ -1697,139 +1743,139 @@ double quad_mean(Image* Raw_image, Image* Comp_image){
   for(int i=0;i<Raw_image->Msh->NbrVer;i++) qc+= fabs(sol_interpol[i]- Raw_image->Sol[i]);
   printf(" qc = %10f \n", qc/Raw_image->Msh->NbrVer);
 
-  return qc;
+  return qc/Raw_image->Msh->NbrVer;
 }
 
 // ============================================================================
 //                       Maillage addaptation
 // ============================================================================
 
-// double* grad_tri(Mesh* Msh,double* u, int Tri)
-// {
-//   double* P1; double*P2;  double* P3;
-//   int p1,p2,p3;
-//   p1 = Msh->Tri[Tri][0];  p2 = Msh->Tri[Tri][1];  p3 = Msh->Tri[Tri][2]; 
-//   P1 = Msh->Crd[p1];      P2 = Msh->Crd[p2];      P3 = Msh->Crd[p3];
-//   double A_k = surf(P1,P2,P3);
+double* grad_tri(Mesh* Msh,double* u, int Tri)
+{
+  double* P1; double*P2;  double* P3;
+  int p1,p2,p3;
+  p1 = Msh->Tri[Tri][0];  p2 = Msh->Tri[Tri][1];  p3 = Msh->Tri[Tri][2]; 
+  P1 = Msh->Crd[p1];      P2 = Msh->Crd[p2];      P3 = Msh->Crd[p3];
+  double A_k = surf(P1,P2,P3);
 
-//   double* grad_u = calloc(2,sizeof(double));
+  double* grad_u = calloc(2,sizeof(double));
 
-//   double base_1x, base_1y, base_2x, base_2y ,base_3x, base_3y;
-//   base_1x = (P2[0]-P3[0])/(2*A_k);  base_1y = -(P2[1]-P3[1])/(2*A_k);
-//   base_2x = (P3[0]-P1[0])/(2*A_k);  base_2y = -(P3[1]-P1[1])/(2*A_k);  
-//   base_3x = (P1[0]-P2[0])/(2*A_k);  base_3y = -(P1[1]-P2[1])/(2*A_k); 
+  double base_1x, base_1y, base_2x, base_2y ,base_3x, base_3y;
+  base_1x = (P2[0]-P3[0])/(2*A_k);  base_1y = -(P2[1]-P3[1])/(2*A_k);
+  base_2x = (P3[0]-P1[0])/(2*A_k);  base_2y = -(P3[1]-P1[1])/(2*A_k);  
+  base_3x = (P1[0]-P2[0])/(2*A_k);  base_3y = -(P1[1]-P2[1])/(2*A_k); 
   
-//   grad_u[0] = u[p1]*base_1x + u[p2]*base_2x + u[p3]*base_3x;
-//   grad_u[1] = u[p1]*base_1y + u[p2]*base_2y + u[p3]*base_3y;
+  grad_u[0] = u[p1]*base_1x + u[p2]*base_2x + u[p3]*base_3x;
+  grad_u[1] = u[p1]*base_1y + u[p2]*base_2y + u[p3]*base_3y;
 
-//   return grad_u;
-// }
+  return grad_u;
+}
 
-// double* grad_ver(Mesh* Msh,double* u, int iVer)
-// {
-//   printf(" \n --------------------------- \n");
-//   int* support = Localise_Tri(Msh,Msh->Crd[iVer]);
+double* grad_ver(Mesh* Msh,double* u, int iVer)
+{
+  printf(" \n --------------------------- \n");
+  int* support = Localise_Tri(Msh,Msh->Crd[iVer]);
 
-//   double* gradu_Tri;
-//   double* grad_u    = calloc(2,sizeof(double));
+  double* gradu_Tri;
+  double* grad_u    = calloc(2,sizeof(double));
 
-//   int size_support=3;
-//   double surface_support, surface_tri; 
+  int size_support=3;
+  double surface_support, surface_tri; 
 
-//   for(int jTri=2;jTri<size_support;jTri++)
-//   {
-//     printf("calculating the gradient of triangle %d \n", support[jTri]);
-//     if(support[jTri+1]!=NULL) size_support+=1;
+  for(int jTri=2;jTri<size_support;jTri++)
+  {
+    printf("calculating the gradient of triangle %d \n", support[jTri]);
+    // if(support[jTri+1]!=NULL) size_support+=1;
 
-//     surface_tri = surf_tri(Msh,support[jTri]);
-//     surface_support += surface_tri;
+    surface_tri = surf_tri(Msh,support[jTri]);
+    surface_support += surface_tri;
 
-//     gradu_Tri = grad_tri(Msh,u,support[jTri]);
-//     printf(" gradu_Tri : (%10f,%10f) \n ", gradu_Tri[0], gradu_Tri[1]);
-//     grad_u[0] += surface_tri * gradu_Tri[0];
-//     grad_u[1] += surface_tri * gradu_Tri[1];
+    gradu_Tri = grad_tri(Msh,u,support[jTri]);
+    printf(" gradu_Tri : (%10f,%10f) \n ", gradu_Tri[0], gradu_Tri[1]);
+    grad_u[0] += surface_tri * gradu_Tri[0];
+    grad_u[1] += surface_tri * gradu_Tri[1];
 
-//   }
-//   printf(" grad_u : (%10f,%10f) \n", grad_u[0], grad_u[1]);
-//   return grad_u;
-// }
+  }
+  printf(" grad_u : (%10f,%10f) \n", grad_u[0], grad_u[1]);
+  return grad_u;
+}
 
-// double** grad_mesh(Mesh* Msh,double* u)
-// {
-//   double** grad_u = calloc(Msh->NbrVer,sizeof(double[2]));
-//   double* temp   = calloc(2,sizeof(double));
-//   msh_neighbors(Msh,0);
+double** grad_mesh(Mesh* Msh,double* u)
+{
+  double** grad_u = calloc(Msh->NbrVer,sizeof(double[2]));
+  double* temp   = calloc(2,sizeof(double));
+  msh_neighbors(Msh,0);
 
-//   for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
-//   {
-//     printf(" calculating the gradient of point %d \n", iVer);
-//     temp = grad_ver(Msh,u,iVer);
-//     grad_u[iVer] = temp;
-//     printf(" grad_u_x : %10f \n" ,grad_u[iVer][0]);
-//   }
-//   return grad_u;
-// }
+  for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
+  {
+    printf(" calculating the gradient of point %d \n", iVer);
+    temp = grad_ver(Msh,u,iVer);
+    grad_u[iVer] = temp;
+    printf(" grad_u_x : %10f \n" ,grad_u[iVer][0]);
+  }
+  return grad_u;
+}
 
-// double** Hessienne(Mesh* Msh, double* u)
-// {
-//   double* grad_u_x = calloc(Msh->NbrVer,sizeof(double));
-//   double* grad_u_y = calloc(Msh->NbrVer,sizeof(double));
-//   double* temp   = calloc(2,sizeof(double));
-//   msh_neighbors(Msh,0);
+double** Hessienne(Mesh* Msh, double* u)
+{
+  double* grad_u_x = calloc(Msh->NbrVer,sizeof(double));
+  double* grad_u_y = calloc(Msh->NbrVer,sizeof(double));
+  double* temp   = calloc(2,sizeof(double));
+  msh_neighbors(Msh,0);
 
-//   // calcul du gradient
-//   for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
-//   {
-//     temp = grad_ver(Msh,u,iVer);
-//     grad_u_x[iVer] = temp[0];    grad_u_y[iVer] = temp[1];
-//   }
+  // calcul du gradient
+  for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
+  {
+    temp = grad_ver(Msh,u,iVer);
+    grad_u_x[iVer] = temp[0];    grad_u_y[iVer] = temp[1];
+  }
 
-//   // calcul de la Hessienne
-//   double** Hess = calloc(Msh->NbrVer, sizeof(double[3]));
-//   for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
-//   {
-//     printf(" calculating the gradient of point %d \n", iVer);
-//     temp = grad_ver(Msh,grad_u_x,iVer);
-//     Hess[iVer][0] = temp[0];  Hess[iVer][1]= temp[1];
+  // calcul de la Hessienne
+  double** Hess = calloc(Msh->NbrVer, sizeof(double[3]));
+  for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
+  {
+    printf(" calculating the gradient of point %d \n", iVer);
+    temp = grad_ver(Msh,grad_u_x,iVer);
+    Hess[iVer][0] = temp[0];  Hess[iVer][1]= temp[1];
 
-//     temp = grad_ver(Msh,grad_u_y,iVer);
-//     Hess[iVer][1] = 0.5*( Hess[iVer][1] + temp[0]);  Hess[iVer][2]= temp[1];
-//   }
+    temp = grad_ver(Msh,grad_u_y,iVer);
+    Hess[iVer][1] = 0.5*( Hess[iVer][1] + temp[0]);  Hess[iVer][2]= temp[1];
+  }
 
 
-//   return Hess;
-// }
+  return Hess;
+}
 
-// int metrique(Mesh* Msh,double* u)
-// {
-//   double** M        = calloc(Msh->NbrVer,sizeof(double3d)); 
-//   double* grad_u_x  = calloc(Msh->NbrVer,sizeof(double));
-//   double* grad_u_y  = calloc(Msh->NbrVer,sizeof(double));
-//   double* temp      = calloc(2,sizeof(double));
+int metrique(Mesh* Msh,double* u)
+{
+  // double** M        = calloc(Msh->NbrVer,sizeof(double3d)); 
+  // double* grad_u_x  = calloc(Msh->NbrVer,sizeof(double));
+  // double* grad_u_y  = calloc(Msh->NbrVer,sizeof(double));
+  // double* temp      = calloc(2,sizeof(double));
 
-//   double mat[3];
-//   double l[2];
-//   double v[4];
+  // double mat[3];
+  // double l[2];
+  // double v[4];
   
-//   double** grad_u= grad_mesh(Msh,u);
-//   for(int i=0;i<Msh->NbrVer+1;i++){grad_u_x[i]= grad_u[i][0]; grad_u_y[i]=grad_u[i][1];}
+  // double** grad_u= grad_mesh(Msh,u);
+  // for(int i=0;i<Msh->NbrVer+1;i++){grad_u_x[i]= grad_u[i][0]; grad_u_y[i]=grad_u[i][1];}
 
-//   for(int iVer=1;iVer<Msh->NbrVer;iVer++)
-//   {
+  // for(int iVer=1;iVer<Msh->NbrVer;iVer++)
+  // {
     
-//     printf(" calculating the gradient of point %d \n", iVer);
-//     temp = grad_ver(Msh,grad_u_x,iVer);
-//     mat[0] = temp[0];  mat[1]= temp[1];
+  //   printf(" calculating the gradient of point %d \n", iVer);
+  //   temp = grad_ver(Msh,grad_u_x,iVer);
+  //   mat[0] = temp[0];  mat[1]= temp[1];
 
-//     temp = grad_ver(Msh,grad_u_y,iVer);
-//     mat[1] = 0.5*(mat[1] + temp[0]);  mat[2]= temp[1];
+  //   temp = grad_ver(Msh,grad_u_y,iVer);
+  //   mat[1] = 0.5*(mat[1] + temp[0]);  mat[2]= temp[1];
 
-//     Sol_Eigen2d(mat,l,v);
-//     l[0] = max(l[0],1e-10);    l[1] = max(l[1],1e-10);
+  //   Sol_Eigen2d(mat,l,v);
+  //   l[0] = max(l[0],1e-10);    l[1] = max(l[1],1e-10);
 
     
 
-//   }
+  // }
 
-//   return 0;
-// }
+  return 0;
+}
