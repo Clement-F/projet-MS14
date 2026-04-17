@@ -99,13 +99,14 @@ int msh_neighborsQ2(Mesh* Msh); // build TriVoi with the naive quadratic approac
 //--- Implementing the following function should be necessary
 HashTable* hash_init(int SizHead, int NbrMaxObj);                           // alloc and set htable ==> allocate Head, LstObj
 
-int hash_find(HashTable* hsh, int iVer1, int iVer2);                        // ==> return the id found (in LstObj ), if 0 the object is not in the list
-int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh);    // ==> add this entry in the hash tab
-int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri);             // ==> suppress this entry in the hash tab
-int hash_bound(HashTable* hsh);                                             // ==> prints the number of edges on the boundary
-int hash_collision(HashTable* hsh);                                         // ==> prints the mean and max of collision of the HashTable 
-int hash_out(HashTable* hsh);                                               // ==> prints the HashTable
-int hash_out_chain(HashTable* hsh, int key);
+int hash_find(HashTable* hsh, int iVer1, int iVer2);                        //  return the id found (in LstObj ), if 0 the object is not in the list
+int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh);    //  add this entry in the hash tab
+int hash_suppr(HashTable* hsh, int iVer1, int iVer2, int iTri);             //  suppress this entry in the hash tab
+int hash_bound(HashTable* hsh);                                             //  prints the number of edges on the boundary
+int hash_collision(HashTable* hsh);                                         //  prints the mean and max of collision of the HashTable 
+int hash_out(HashTable* hsh);                                               //  prints the HashTable
+int hash_out_index(HashTable* hsh, int index);                              // print the element of the table
+int hash_out_chain(HashTable* hsh, int key);                                //  prints the HashTable's chain of indice : key
 
 //--- Fonction used for adaptation
 
@@ -116,16 +117,15 @@ int msh_write2dfield_Vertices(char* file, int nfield, double* field);
 
 //--- Fonction used for the CC
 
-int valid_edge(Mesh* Msh, int iTri, int iEdg);
-double* connex_comp(Mesh* Msh);
-double quality(double2d P1, double2d P2, double2d P3);
-double surf(double2d P1, double2d P2, double2d P3);
-int ajout_point(Mesh* Msh, double2d Point);
-int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3);
-int hash_out_index(HashTable* hsh, int index);  // print the element of the table
+int valid_edge(Mesh* Msh, int iTri, int iEdg);                              
+double* connex_comp(Mesh* Msh);                                             // affect a number to each Connex Component of the mesh
+int Is_Inside_Circle(double2d Point, double2d P1,double2d P2, double2d P3); // returns 1 if inside the circumcircle of the triangle (P1,P2,P3) and 0 if not 
+double quality(double2d P1, double2d P2, double2d P3);                      // returns the quality of a triangle (P1,P2,P3)
+double surf(double2d P1, double2d P2, double2d P3);                         // returns the surface of a triangle (P1,P2,P3)
+int ajout_point(Mesh* Msh, double2d Point);                                 // adds a point P to the Mesh
 
-Mesh* Maillage_Delaunay(int Nb_Point,Mesh* Msh);
-int Mesh_out(Mesh* Msh);
+Mesh* Maillage_Delaunay(int Nb_Point,Mesh* Msh);                            // adds Nb_Point to Msh by Delauney method
+int Mesh_out(Mesh* Msh);                                                    // prints every vertexes and triangles of the mesh
 
 
 typedef struct Image {
@@ -137,10 +137,10 @@ Image* Imag_init();
 
 // -----------------
 
-Image* Compression_alea(Image* Raw_image, double factor);
-Image* Compression_step(Image* Raw_image, Image* Comp_image);
-Image* Compression(Image* Raw_image);
-int Projection(Image* Raw_image, Image* Comp_image);
+Image* Compression_alea(Image* Raw_image, double factor);     // compresses an Image by a factor, removing points from the mesh randomly
+Image* Compression_step(Image* Raw_image, Image* Comp_image); // compresses an Image by removing one point
+Image* Compression(Image* Raw_image);                         // compresses an Image by removing the "least important" points
+int Projection(Image* Raw_image, Image* Comp_image);          //
 double* Interpol_sol(Image* Raw_image, Image* Comp_image);
 double quad_mean(Image* Raw_image, Image* Comp_image);
 

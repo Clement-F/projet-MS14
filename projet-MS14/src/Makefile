@@ -65,9 +65,6 @@ clean :
 	$(R) *.o
 
 clean_all :
-	$(R) *.o
-	$(R) *.exe
-	$(R) *.mesh
-	$(R) *.sol
+	$(R) *.o *.exe *.mesh *.sol
 
 

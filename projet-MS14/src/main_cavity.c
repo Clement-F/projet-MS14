@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
   ti        = clock();
 
   Msh = Maillage_Delaunay(500,Msh);
-  msh_neighbors(Msh);
+  msh_neighbors(Msh,0);
   
   printf(" Mesh created \n");
 
