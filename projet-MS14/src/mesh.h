@@ -139,7 +139,7 @@ Image* Imag_init();
 
 Image* Compression_alea(Image* Raw_image, double factor);     // compresses an Image by a factor, removing points from the mesh randomly
 Image* Compression_step(Image* Raw_image, Image* Comp_image); // compresses an Image by removing one point
-Image* Compression(Image* Raw_image);                         // compresses an Image by removing the "least important" points
+Image* Compression(Image* Raw_image, int Nb_point);           // compresses an Image by removing the "least important" points
 int Projection(Image* Raw_image, Image* Comp_image);          //
 double* Interpol_sol(Image* Raw_image, Image* Comp_image);
 double quad_mean(Image* Raw_image, Image* Comp_image);

@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 
   //--- create neigbhors with hash table
   to = clock();
-  msh_neighbors(Msh);
+  msh_neighbors(Msh,0);
   ti = clock();
 
   printf("  time hash tab neigh.  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
