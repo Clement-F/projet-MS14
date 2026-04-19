@@ -32,12 +32,11 @@ int main(int argc, char* argv[])
   printf(" gradient calculated \n");
 
   double* gradu_x = calloc(Msh->NbrVer,sizeof(double));
-//   double* gradu_y = calloc(Msh->NbrVer,sizeof(double));
 
   for(int i=1;i<Msh->NbrVer;i++){ gradu_x[i] =gradu[i][0]; }
 
   
-  msh_write2dfield_Vertices("Compression.sol", Msh->NbrVer, gradu_x);
+  msh_write2dfield_Vertices("Gradient.sol", Msh->NbrVer, gradu_x);
 
   return 0;
 }

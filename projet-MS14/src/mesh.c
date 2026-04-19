@@ -315,10 +315,6 @@ int msh_neighborsQ2(Mesh* Msh)
     }
   }
   
-  // for (iTri = 1; iTri <= Msh->NbrTri; iTri++) {
-  // printf("Trivoi of %d : %d, %d, %d \n", iTri, Msh->TriVoi[iTri][0], Msh->TriVoi[iTri][1], Msh->TriVoi[iTri][2]);
-  // }
-
   return 1;
 }
 
@@ -395,10 +391,10 @@ HashTable* hash_init(int SizHead, int NbrMaxObj)
 
 int hash_find(HashTable* hsh, int iVer1, int iVer2)
 {
-  if(iVer1==0 ||iVer2==0){printf("\n error : looking up a null point \n"); return 0;}
+  if(iVer1==0 ||iVer2==0){printf("\n ERROR  : looking up a null point \n"); return 0;}
 
   if(iVer1== hsh->NbrMaxObj +1 ||iVer2== hsh->NbrMaxObj +1){
-      printf("\n error : looking up a point over the limit \n"); return 0;}
+      printf("\n ERROR  : looking up a point over the limit \n"); return 0;}
 
   int key = iVer1 + iVer2;
   int j_hsh = hsh->Head[key];
@@ -427,8 +423,7 @@ int hash_add(HashTable* hsh, int iVer1, int iVer2, int iTri, int i_hsh)
   if(i_hsh==0)  // if the element wasn't found
   {
     if(hsh->NbrObj> hsh->NbrMaxObj+1) printf("  ## WARNING: HSH ELEMENT ALREADY FULL. IGNORED\n");
-    // printf("adding element %d of Vertex (%d,%d) and Tri (%d,%d) to have next %d \n", hsh->NbrObj, iVer1,iVer2, iTri, hsh->LstObj[hsh->NbrObj][3], hsh->LstObj[hsh->NbrObj][4]);
-
+    
     hsh->LstObj[hsh->NbrObj +1][0] = iVer1;
     hsh->LstObj[hsh->NbrObj +1][1] = iVer2;
     hsh->LstObj[hsh->NbrObj +1][2] = iTri; 
@@ -526,7 +521,6 @@ int hash_out(HashTable* hsh)  // print the hash table
   for(int i=1;i<=hsh->SizHead;i++)
   {
     if(hsh->Head[i] !=0 ) printf("Head %d : %d ",i,hsh->Head[i]);
-    // if(i%5 ==0)printf(" \n");
   }
 
   return 0;
@@ -602,14 +596,13 @@ int Check_hash(Mesh* Msh) // check if the hashtable is correct for the mesh.
   int iVer1,iVer2,iTri1,iTri2;
   for(int key=1;key<hsh->SizHead;key++)
   {
-    printf("check key %d \n",key);
     i_obj = hsh->Head[key];
     while(i_obj !=0)
     {
       hash_out_index(hsh,i_obj);
       iVer1 = hsh->LstObj[i_obj][0];
       iVer2 = hsh->LstObj[i_obj][1];
-      if(iVer1 + iVer2 != key){printf("The element %d is associated to the wrong key \n",i_obj);}
+      if(iVer1 + iVer2 != key){printf("ERROR :The element %d is associated to the wrong key \n",i_obj);}
 
       i_obj = hsh->LstObj[i_obj][4];
     }
@@ -627,8 +620,6 @@ int Check_hash(Mesh* Msh) // check if the hashtable is correct for the mesh.
       iTri1 = hsh->LstObj[i_obj][2];
       iTri2 = hsh->LstObj[i_obj][3];
 
-      // hash_out_index(hsh,i_obj);
-
       if(Msh->Tri[iTri1][0]==iVer1 && Msh->Tri[iTri1][1]==iVer2) loc_neigh1 =1;
       if(Msh->Tri[iTri1][1]==iVer1 && Msh->Tri[iTri1][0]==iVer2) loc_neigh1 =1;
       if(Msh->Tri[iTri1][2]==iVer1 && Msh->Tri[iTri1][1]==iVer2) loc_neigh1 =1;
@@ -636,7 +627,6 @@ int Check_hash(Mesh* Msh) // check if the hashtable is correct for the mesh.
       if(Msh->Tri[iTri1][0]==iVer1 && Msh->Tri[iTri1][2]==iVer2) loc_neigh1 =1;
       if(Msh->Tri[iTri1][2]==iVer1 && Msh->Tri[iTri1][0]==iVer2) loc_neigh1 =1;
       
-      // printf("Tri : %d,  (%d,%d,%d), ref : %d \n", iTri1, Msh->Tri[iTri1][0], Msh->Tri[iTri1][1], Msh->Tri[iTri1][2],Msh->TriRef[iTri1]);
       
       if(Msh->Tri[iTri2][0]==iVer1 && Msh->Tri[iTri2][1]==iVer2) loc_neigh2 =1;
       if(Msh->Tri[iTri2][1]==iVer1 && Msh->Tri[iTri2][0]==iVer2) loc_neigh2 =1;
@@ -644,9 +634,8 @@ int Check_hash(Mesh* Msh) // check if the hashtable is correct for the mesh.
       if(Msh->Tri[iTri2][1]==iVer1 && Msh->Tri[iTri2][2]==iVer2) loc_neigh2 =1;
       if(Msh->Tri[iTri2][0]==iVer1 && Msh->Tri[iTri2][2]==iVer2) loc_neigh2 =1;
       if(Msh->Tri[iTri2][2]==iVer1 && Msh->Tri[iTri2][0]==iVer2) loc_neigh2 =1;  
-      // printf("Tri : %d,  (%d,%d,%d), ref : %d \n", iTri2, Msh->Tri[iTri2][0], Msh->Tri[iTri2][1], Msh->Tri[iTri2][2],Msh->TriRef[iTri2]);
 
-      if((loc_neigh1!=1 && iTri1!=0 )|| (loc_neigh2 !=1 && iTri2!=0) ){printf("The element %d is associated to the wrong triangles \n",i_obj);}
+      if((loc_neigh1!=1 && iTri1!=0 )|| (loc_neigh2 !=1 && iTri2!=0) ){printf(" ERROR : The element %d is associated to the wrong triangles \n",i_obj);}
       
       i_obj = hsh->LstObj[i_obj][4];
     }
@@ -821,6 +810,16 @@ double* connex_comp(Mesh* Msh)
     for(int trig_ = 1; trig_<Msh->NbrTri; trig_ ++){ if(color_trig[trig_]==0){id_last_seed = trig_; break;}}
   }
   printf("sub domains created. there is %d sub domaines \n",color-1);
+
+  int Nb_color=0;
+  for(int i_color=1;i_color<color;i_color++)
+    { 
+    Nb_color =0;
+    for(int iTri=1;iTri<Msh->NbrTri;iTri++) 
+      if(color_trig[iTri] == i_color){Nb_color++;}  
+    printf("sub domains %d has %d elements \n", i_color, Nb_color);
+    }
+
   return color_trig;
 }
 
@@ -1401,7 +1400,7 @@ int ajout_point(Mesh* Msh, double2d Point)
   sizeof_cavity=0; sizeof_boundary =0;
 
   int* cavity = digging_a_hole(Msh,Point);
-  if(cavity == NULL){ printf("point already there \n"); return 0;}
+  if(cavity == NULL){ printf("ERROR : point already there \n"); return 0;}
 
   deleting_Cavity(Msh,cavity);
 
@@ -1443,7 +1442,7 @@ Mesh* Maillage_Delaunay(int Nb_Point, Mesh* Msh)
     ajout_point(Msh, (double2d){Crd_x,Crd_y} );
   }
 
-  double regul = (double)(Nb_Point)/(double)64;
+  double regul = (double)(Nb_Point)/(double)128;
   // if we have enough points, add an edge point
   for(int jt=0;jt+1<regul; jt++)
   {
@@ -1551,20 +1550,18 @@ Image* Compression_alea(Image* Raw_image, double factor)
 Image* Compression_step(Image* Raw_image, Image* Comp_image)
 {
   srand(8);
-  // printf(" a new step to the compression of an image \n");
   msh_boundingbox(Raw_image->Msh);
   msh_boundingbox(Comp_image->Msh);
   
   double* sol_interpol = Interpol_sol(Raw_image,Comp_image);
 
-  // printf(" interpolation of the sol calculated \n");
 
   double max_diff = 0, temp_diff=0;
   int Ver_insert=0; 
 
   for(int iVer=1;iVer<Raw_image->Msh->NbrVerMax;iVer++)
   {
-    temp_diff = fabs(sol_interpol[iVer]-Raw_image->Sol[iVer]);  // mm point ??
+    temp_diff = fabs(sol_interpol[iVer]-Raw_image->Sol[iVer]);
 
     if(temp_diff>max_diff)
     {      
@@ -1576,8 +1573,6 @@ Image* Compression_step(Image* Raw_image, Image* Comp_image)
       
   if(Ver_insert !=0)
   {
-    
-  // printf(" point in mesh : %d (%10f,%10f);  diff : %10f \n",  Ver_insert, Raw_image->Msh->Crd[Ver_insert][0], Raw_image->Msh->Crd[Ver_insert][1],max_diff );
   ajout_point(Comp_image->Msh,Raw_image->Msh->Crd[Ver_insert]);
     Comp_image->Sol[Comp_image->Msh->NbrVer] = Raw_image->Sol[Ver_insert];       
   }
@@ -1622,7 +1617,6 @@ Image* Compression(Image* Raw_image, int Nb_point)
   
   while(qc>2 && n<Nb_point)
   {
-    // printf(" adding a new point \n");
     Comp_image= Compression_step(Raw_image,Comp_image);
     qc = quad_mean(Raw_image, Comp_image);
     printf(" %d quadratic mean : %10f \n",n, qc);
@@ -1678,8 +1672,6 @@ int Projection(Image* Raw_image, Image* Comp_image)
 
   Mesh* Msh = Raw_image->Msh;
 
-  // printf(" Projection of a sol \n");
-
   for(int iVer=1;iVer<Comp_image->Msh->NbrVer; iVer++)
   {
 
@@ -1690,8 +1682,6 @@ int Projection(Image* Raw_image, Image* Comp_image)
     {
       int Ver=0;
       iTri= Result[2]; 
-
-      printf(" %10f ", distance(Point, Raw_image->Msh->Crd[Raw_image->Msh->Tri[iTri][1]] ) );
 
       for(int i=0;i<3;i++)
         if( distance(Point, Raw_image->Msh->Crd[Raw_image->Msh->Tri[iTri][i]] )<1e-6) 
@@ -1749,7 +1739,6 @@ double* grad_tri(Mesh* Msh,double* u, int Tri)
 
 double* grad_ver(Mesh* Msh,double* u, int iVer)
 {
-  printf(" \n --------------------------- \n");
   int* support = Localise_Tri(Msh,Msh->Crd[iVer]);
 
   double* gradu_Tri;
@@ -1760,19 +1749,15 @@ double* grad_ver(Mesh* Msh,double* u, int iVer)
 
   for(int jTri=2;jTri<size_support;jTri++)
   {
-    printf("calculating the gradient of triangle %d \n", support[jTri]);
-    // if(support[jTri+1]!=NULL) size_support+=1;
 
     surface_tri = surf_tri(Msh,support[jTri]);
     surface_support += surface_tri;
 
     gradu_Tri = grad_tri(Msh,u,support[jTri]);
-    printf(" gradu_Tri : (%10f,%10f) \n ", gradu_Tri[0], gradu_Tri[1]);
     grad_u[0] += surface_tri * gradu_Tri[0];
     grad_u[1] += surface_tri * gradu_Tri[1];
 
   }
-  printf(" grad_u : (%10f,%10f) \n", grad_u[0], grad_u[1]);
   return grad_u;
 }
 
@@ -1784,10 +1769,8 @@ double** grad_mesh(Mesh* Msh,double* u)
 
   for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
   {
-    printf(" calculating the gradient of point %d \n", iVer);
     temp = grad_ver(Msh,u,iVer);
     grad_u[iVer] = temp;
-    printf(" grad_u_x : %10f \n" ,grad_u[iVer][0]);
   }
   return grad_u;
 }
@@ -1810,7 +1793,6 @@ double** Hessienne(Mesh* Msh, double* u)
   double** Hess = calloc(Msh->NbrVer, sizeof(double[3]));
   for(int iVer=1;iVer<Msh->NbrVer+1;iVer++)
   {
-    printf(" calculating the gradient of point %d \n", iVer);
     temp = grad_ver(Msh,grad_u_x,iVer);
     Hess[iVer][0] = temp[0];  Hess[iVer][1]= temp[1];
 

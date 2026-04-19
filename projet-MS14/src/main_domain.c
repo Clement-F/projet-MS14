@@ -18,7 +18,6 @@ int main(int argc, char* argv[])
   double* color = calloc((Msh->NbrTri+1),sizeof(double));
 
   color = (connex_comp(Msh));
-  // for(int i=0; i<Msh->NbrTri+1; i++){printf("color of element %d : %f \n",i,color[i]);}
   msh_write2dfield_Triangles("color.sol", Msh->NbrTri, color);
 
 //   --- TODO: compute metric field

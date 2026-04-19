@@ -59,18 +59,10 @@ int main(int argc, char* argv[])
   ti = clock();
   printf("quality evaluated in  %lg (s) \n", (ti - to) / CLOCKS_PER_SEC);
 
-  
-  // msh_write2dmetric("metric.sol", Msh->NbrVer, Met);
-
   //--- Free memory
   if (Qal != NULL) {
     free(Qal);
     Qal = NULL;
   }
-  // if (Met != NULL) {
-  //   free(Met);
-  //   Met = NULL;
-  // }
-
   return 0;
 }
